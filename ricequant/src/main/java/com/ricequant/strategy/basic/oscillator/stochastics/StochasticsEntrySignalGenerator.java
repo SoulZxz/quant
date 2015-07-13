@@ -2,7 +2,9 @@ package com.ricequant.strategy.basic.oscillator.stochastics;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
 import com.ricequant.strategy.basic.Signal;
+import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
+import com.ricequant.strategy.def.IHStatisticsHistory;
 
 /**
  * Fast, Slow or Full
@@ -38,6 +40,8 @@ import com.ricequant.strategy.def.IHStatistics;
  * (14,3), Slow Stochastic Oscillator (14,3) and Full Stochastic Oscillator
  * (14,3,3).
  * 
+ * Usually use (14, 3) or (20, 5)
+ * 
  * Full Stochastic Oscillator:
  * 
  * Full %K = Fast %K smoothed with X-period SMA
@@ -51,13 +55,49 @@ import com.ricequant.strategy.def.IHStatistics;
  */
 public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 
+	private int period;
+
+	private int maPeriod;
+
+	private double oversold;
+
+	private double overbought;
+
 	@Override
 	public Signal generateSignal(IHStatistics stat) {
-		// Core core = new Core();
-		// core.stoch(startIdx, endIdx, inHigh, inLow, inClose,
-		// optInFastK_Period, optInSlowK_Period, optInSlowK_MAType,
-		// optInSlowD_Period, optInSlowD_MAType, outBegIdx, outNBElement,
-		// outSlowK, outSlowD)
-		return null;
+		IHStatisticsHistory history = stat.history(period + 1, HPeriod.Day);
+		double[] close = history.getClosingPrice();
+		double[] high = history.getHighPrice();
+		double[] low = history.getLowPrice();
+
+		StochasticsComputer computer = new StochasticsComputer();
+		SlowStochastic[] result = computer.compute(close, high, low, period,
+				maPeriod);
+
+		SlowStochastic lastStochastic = result[result.length - 2];
+		double lastSlowK = lastStochastic.getK();
+		double lastSlowD = lastStochastic.getD();
+
+		SlowStochastic currentStochastic = result[result.length - 1];
+		double currentSlowK = currentStochastic.getK();
+		double currentSlowD = currentStochastic.getD();
+
+		// 计算当天的SlowK与SlowD的差值
+		double previousDelta = lastSlowK - lastSlowD;
+		double delta = currentSlowK - currentSlowD;
+		double slowKDelta = currentSlowK - lastSlowK;
+
+		// slowK上升, 从下方穿过slowD, slowK > overSold, 买入
+		if (slowKDelta > 0 && previousDelta < 0 && delta > 0
+				&& currentSlowK > oversold) {
+			return new Signal(1);
+		}
+		// slowK下降, 从上方穿过slowD, slowK < overbought, 卖出
+		else if (slowKDelta < 0 && previousDelta > 0 && delta < 0
+				&& currentSlowK < overbought) {
+			return new Signal(-1);
+		} else {
+			return new Signal(0);
+		}
 	}
 }
