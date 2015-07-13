@@ -1,0 +1,11 @@
+ <%@ jet package="basic.ma" class="MAComputeTemplate" %>
+	public double[] compute(double[] input, int period) {
+		MInteger begin = new MInteger();
+		MInteger length = new MInteger();
+		double[] out = new double[input.length - period + 1];
+
+		Core c = new Core();
+		c.<%=argument%>(0, input.length - 1, input, period, begin, length, out);
+
+		return out;
+	}
