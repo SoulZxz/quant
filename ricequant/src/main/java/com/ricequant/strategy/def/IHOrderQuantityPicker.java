@@ -18,4 +18,11 @@ public interface IHOrderQuantityPicker {
 	 */
 	IHOrderBuilderBase lots(double numLots);
 
+	/**
+	 * 决定持仓目标占总资金百分比
+	 *
+	 * @return
+	 */
+	IHOrderBuilderBase percent(double percent);
+
 }

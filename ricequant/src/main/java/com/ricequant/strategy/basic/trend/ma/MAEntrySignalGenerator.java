@@ -4,24 +4,38 @@ import com.ricequant.strategy.basic.EntrySignalGenerator;
 import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
+import com.tictactec.ta.lib.Core;
+import com.tictactec.ta.lib.MInteger;
 
 /**
  * MA算法仅适用于长期均线趋势变化明显，转向少的情况，如果长期均线有大量whipsaws，不适合
  */
 public class MAEntrySignalGenerator implements EntrySignalGenerator {
 
+	public static final int MA_TYPE_SMA = 1;
+
+	public static final int MA_TYPE_EMA = 2;
+
+	public static final int MA_TYPE_WMA = 3;
+
+	private Core core = new Core();
+
 	private int shortPeriod;
 
 	private int longPeriod;
 
-	private MAType shortPeriodType;
+	private int shortPeriodType;
 
-	private MAType longPeriodType;
+	private int longPeriodType;
 
 	private double delta = 0;
 
-	public MAEntrySignalGenerator(int shortPeriod, int longPeriod, MAType shortPeriodType,
-			MAType longPeriodType) {
+	public MAEntrySignalGenerator() {
+
+	}
+
+	public MAEntrySignalGenerator(int shortPeriod, int longPeriod, int shortPeriodType,
+			int longPeriodType) {
 		super();
 		this.shortPeriod = shortPeriod;
 		this.longPeriod = longPeriod;
@@ -35,10 +49,9 @@ public class MAEntrySignalGenerator implements EntrySignalGenerator {
 		double[] closeLong = stat.history(longPeriod, HPeriod.Day).getClosingPrice();
 
 		// 计算短期MA
-		double[] shortMA = MAComputerFactory.create(shortPeriodType).compute(closeShort,
-				shortPeriod);
+		double[] shortMA = computeMA(closeShort, shortPeriod, shortPeriodType);
 		// 计算长期MA
-		double[] longMA = MAComputerFactory.create(longPeriodType).compute(closeLong, longPeriod);
+		double[] longMA = computeMA(closeLong, longPeriod, longPeriodType);
 
 		// 计算当天的短期MA与长期MA的差值
 		double previousDelta = delta;
@@ -60,4 +73,25 @@ public class MAEntrySignalGenerator implements EntrySignalGenerator {
 		}
 	}
 
+	public double[] computeMA(double[] input, int period, int maType) {
+		MInteger begin = new MInteger();
+		MInteger length = new MInteger();
+		double[] out = new double[input.length - period + 1];
+
+		switch (maType) {
+		case MA_TYPE_SMA:
+			core.sma(0, input.length - 1, input, period, begin, length, out);
+			break;
+		case MA_TYPE_EMA:
+			core.ema(0, input.length - 1, input, period, begin, length, out);
+			break;
+		case MA_TYPE_WMA:
+			core.wma(0, input.length - 1, input, period, begin, length, out);
+			break;
+		default:
+			throw new RuntimeException("unsupported MaType " + maType);
+		}
+
+		return out;
+	}
 }

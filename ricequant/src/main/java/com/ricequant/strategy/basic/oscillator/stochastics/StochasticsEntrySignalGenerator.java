@@ -5,6 +5,9 @@ import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
+import com.tictactec.ta.lib.Core;
+import com.tictactec.ta.lib.MAType;
+import com.tictactec.ta.lib.MInteger;
 
 /**
  * Fast, Slow or Full
@@ -55,6 +58,8 @@ import com.ricequant.strategy.def.IHStatisticsHistory;
  */
 public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 
+	private Core core = new Core();
+
 	private int period;
 
 	private int maPeriod;
@@ -70,17 +75,15 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 		double[] high = history.getHighPrice();
 		double[] low = history.getLowPrice();
 
-		StochasticsComputer computer = new StochasticsComputer();
-		SlowStochastic[] result = computer.compute(close, high, low, period,
-				maPeriod);
+		double[][] result = computeSlowStochastic(close, high, low, period, maPeriod);
+		double[] slowK = result[0];
+		double[] slowD = result[1];
 
-		SlowStochastic lastStochastic = result[result.length - 2];
-		double lastSlowK = lastStochastic.getK();
-		double lastSlowD = lastStochastic.getD();
+		double lastSlowK = slowK[result.length - 2];
+		double lastSlowD = slowD[result.length - 2];
 
-		SlowStochastic currentStochastic = result[result.length - 1];
-		double currentSlowK = currentStochastic.getK();
-		double currentSlowD = currentStochastic.getD();
+		double currentSlowK = slowK[result.length - 1];
+		double currentSlowD = slowD[result.length - 1];
 
 		// 计算当天的SlowK与SlowD的差值
 		double previousDelta = lastSlowK - lastSlowD;
@@ -88,16 +91,41 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 		double slowKDelta = currentSlowK - lastSlowK;
 
 		// slowK上升, 从下方穿过slowD, slowK > overSold, 买入
-		if (slowKDelta > 0 && previousDelta < 0 && delta > 0
-				&& currentSlowK > oversold) {
+		if (slowKDelta > 0 && previousDelta < 0 && delta > 0 && currentSlowK > oversold) {
 			return new Signal(1);
 		}
 		// slowK下降, 从上方穿过slowD, slowK < overbought, 卖出
-		else if (slowKDelta < 0 && previousDelta > 0 && delta < 0
-				&& currentSlowK < overbought) {
+		else if (slowKDelta < 0 && previousDelta > 0 && delta < 0 && currentSlowK < overbought) {
 			return new Signal(-1);
 		} else {
 			return new Signal(0);
 		}
+	}
+
+	/**
+	 * 计算SlowStochastic
+	 *
+	 * @param close
+	 * @param high
+	 * @param low
+	 * @param period
+	 * @param maPeriod
+	 * @return 2维数组, [0]是slowK, [1]是slowD
+	 */
+	public double[][] computeSlowStochastic(double[] close, double[] high, double[] low,
+			int period, int maPeriod) {
+		MInteger begin = new MInteger();
+		MInteger length = new MInteger();
+		int resultLegnth = close.length - period + 1;
+		double[] slowK = new double[resultLegnth];
+		double[] slowD = new double[resultLegnth];
+		double[][] result = new double[2][resultLegnth];
+		result[0] = slowK;
+		result[1] = slowD;
+
+		core.stoch(0, close.length - 1, high, low, close, period, maPeriod, MAType.Sma, maPeriod,
+				MAType.Sma, begin, length, slowK, slowD);
+
+		return result;
 	}
 }

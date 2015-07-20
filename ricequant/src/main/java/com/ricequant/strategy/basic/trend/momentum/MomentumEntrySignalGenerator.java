@@ -21,10 +21,8 @@ public class MomentumEntrySignalGenerator implements EntrySignalGenerator {
 		// 储存进去对应的数组
 		double[] close = stat.history(period, HPeriod.Day).getClosingPrice();
 
-		MomentumComputer momentumComputer = new MomentumComputer();
-
 		// 计算周期momentum
-		double[] momentum = momentumComputer.compute(close, period);
+		double[] momentum = computeMomentum(close, period);
 
 		// 计算当期momentum
 		double currentMomentum = momentum[0];
@@ -41,5 +39,17 @@ public class MomentumEntrySignalGenerator implements EntrySignalGenerator {
 		else {
 			return new Signal(0);
 		}
+	}
+
+	public double[] computeMomentum(double[] input, int period) {
+		double[] out = new double[input.length - period + 1];
+
+		for (int i = period - 1; i < input.length; i++) {
+			double start = input[i - (period - 1)];
+			double end = input[i];
+			out[i - (period - 1)] = end - start;
+		}
+
+		return out;
 	}
 }
