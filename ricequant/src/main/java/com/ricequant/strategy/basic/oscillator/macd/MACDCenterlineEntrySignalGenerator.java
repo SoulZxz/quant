@@ -7,17 +7,7 @@ import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
 
 /**
- * 1.Signal Line Crossovers
- * 
- * Signal line crossovers are the most common MACD signals. The signal line is a
- * 9-day EMA of the MACD Line. As a moving average of the indicator, it trails
- * the MACD and makes it easier to spot MACD turns. A bullish crossover occurs
- * when the MACD turns up and crosses above the signal line. A bearish crossover
- * occurs when the MACD turns down and crosses below the signal line. Crossovers
- * can last a few days or a few weeks, it all depends on the strength of the
- * move.
- * 
- * 2.Centerline Crossovers ( only take them in strong trend, ignore them in
+ * Centerline Crossovers ( only take them in strong trend, ignore them in
  * whipsaw )
  * 
  * Centerline crossovers are the next most common MACD signals. A bullish
@@ -32,7 +22,7 @@ import com.ricequant.strategy.def.IHStatisticsHistory;
  * a sustained uptrend. The MACD will remain negative when there is a sustained
  * downtrend.
  */
-public class MACDEntrySignalGenerator extends MACDComputer implements
+public class MACDCenterlineEntrySignalGenerator extends MACDComputer implements
 		EntrySignalGenerator {
 
 	/**
@@ -55,20 +45,19 @@ public class MACDEntrySignalGenerator extends MACDComputer implements
 				signalPeriod);
 
 		double[] values = result[0];
-		double[] signals = result[1];
 
 		int current = result.length - 1;
 		int yesterday = result.length - 2;
-		double macdDelta = values[current] - values[yesterday];
-		double yesterdayDelta = values[yesterday] - signals[yesterday];
-		double currentDelta = values[current] - signals[current];
 
-		// macd上升，穿过signal line，买入
-		if (macdDelta > 0 && yesterdayDelta < 0 && currentDelta > 0) {
+		double currentMACD = values[current];
+		double yesterdayMACD = values[yesterday];
+
+		// macd上升，穿过0，买入
+		if (currentMACD > 0 && yesterdayMACD < 0) {
 			return new Signal(1);
 		}
-		// madc下降，穿过signal line，卖出
-		else if (macdDelta < 0 && yesterdayDelta > 0 && currentDelta < 0) {
+		// madc下降，穿过0，卖出
+		else if (currentMACD < 0 && yesterdayMACD > 0) {
 			return new Signal(-1);
 		} else {
 			return new Signal(0);
