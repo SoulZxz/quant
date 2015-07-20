@@ -1,7 +1,6 @@
 package com.ricequant.strategy.basic.trend.ma;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 import com.tictactec.ta.lib.Core;
@@ -34,8 +33,8 @@ public class MAEntrySignalGenerator implements EntrySignalGenerator {
 
 	}
 
-	public MAEntrySignalGenerator(int shortPeriod, int longPeriod, int shortPeriodType,
-			int longPeriodType) {
+	public MAEntrySignalGenerator(int shortPeriod, int longPeriod,
+			int shortPeriodType, int longPeriodType) {
 		super();
 		this.shortPeriod = shortPeriod;
 		this.longPeriod = longPeriod;
@@ -43,10 +42,12 @@ public class MAEntrySignalGenerator implements EntrySignalGenerator {
 		this.longPeriodType = longPeriodType;
 	}
 
-	public Signal generateSignal(IHStatistics stat) {
+	public double generateSignal(IHStatistics stat) {
 		// 储存进去对应的数组
-		double[] closeShort = stat.history(shortPeriod, HPeriod.Day).getClosingPrice();
-		double[] closeLong = stat.history(longPeriod, HPeriod.Day).getClosingPrice();
+		double[] closeShort = stat.history(shortPeriod, HPeriod.Day)
+				.getClosingPrice();
+		double[] closeLong = stat.history(longPeriod, HPeriod.Day)
+				.getClosingPrice();
 
 		// 计算短期MA
 		double[] shortMA = computeMA(closeShort, shortPeriod, shortPeriodType);
@@ -61,15 +62,15 @@ public class MAEntrySignalGenerator implements EntrySignalGenerator {
 		// 短期MA与长期MA值出现交叉, 短期MA处于下降趋势, 长期MA处于上升趋势
 		// 简单起见信号强度绝对值统一设置成1
 		if ((previousDelta > 0) && delta < 0) {
-			return new Signal(-1);
+			return -1;
 		}
 		// 短期MA与长期MA值出现交叉, 短期MA处于上升趋势,长期MA处于下降趋势
 		else if ((previousDelta < 0) && delta > 0) {
-			return new Signal(1);
+			return 1;
 		}
 		// 什么也不做
 		else {
-			return new Signal(0);
+			return 0;
 		}
 	}
 

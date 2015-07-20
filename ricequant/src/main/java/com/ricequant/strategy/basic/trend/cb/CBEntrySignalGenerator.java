@@ -1,7 +1,6 @@
 package com.ricequant.strategy.basic.trend.cb;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 
@@ -17,7 +16,7 @@ public class CBEntrySignalGenerator implements EntrySignalGenerator {
 		this.period = period;
 	}
 
-	public Signal generateSignal(IHStatistics stat) {
+	public double generateSignal(IHStatistics stat) {
 		// 储存进去对应的数组
 		double[] close = stat.history(period, HPeriod.Day).getClosingPrice();
 
@@ -32,15 +31,15 @@ public class CBEntrySignalGenerator implements EntrySignalGenerator {
 		// 当期close值是channel高值
 		// 简单起见信号强度绝对值统一设置成1
 		if (currentClose == channelHighest[0]) {
-			return new Signal(1);
+			return 1;
 		}
 		// 当期close值是channel低值
 		else if (currentClose == channelLowest[0]) {
-			return new Signal(-1);
+			return -1;
 		}
 		// 什么也不做
 		else {
-			return new Signal(0);
+			return 0;
 		}
 	}
 
@@ -70,14 +69,16 @@ public class CBEntrySignalGenerator implements EntrySignalGenerator {
 
 				// 重算最小值
 				if (dropValue == currentLowest) {
-					currentLowest = this.computeLowest(input, period, i - period);
+					currentLowest = this.computeLowest(input, period, i
+							- period);
 				} else {
 					currentLowest = Math.min(currentLowest, input[i]);
 				}
 
 				// 重算最大值
 				if (dropValue == currentHighest) {
-					currentHighest = this.computeHighest(input, period, i - period);
+					currentHighest = this.computeHighest(input, period, i
+							- period);
 				} else {
 					currentHighest = Math.max(currentHighest, input[i]);
 				}

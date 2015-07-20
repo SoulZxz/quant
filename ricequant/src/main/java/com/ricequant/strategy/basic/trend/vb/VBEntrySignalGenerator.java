@@ -3,7 +3,6 @@ package com.ricequant.strategy.basic.trend.vb;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.basic.trend.ma.MAEntrySignalGenerator;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
@@ -35,7 +34,8 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 
 	private double volatilityMultiplier;
 
-	public VBEntrySignalGenerator(int period, int refType, int vmType, double volatilityMultiplier) {
+	public VBEntrySignalGenerator(int period, int refType, int vmType,
+			double volatilityMultiplier) {
 		super();
 		this.period = period;
 		this.refType = refType;
@@ -44,7 +44,7 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 	}
 
 	@Override
-	public Signal generateSignal(IHStatistics stat) {
+	public double generateSignal(IHStatistics stat) {
 
 		double[] close = stat.history(period, HPeriod.Day).getClosingPrice();
 		double[] open = stat.history(period, HPeriod.Day).getOpeningPrice();
@@ -52,26 +52,29 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 		double[] low = stat.history(period, HPeriod.Day).getLowPrice();
 
 		double refValue = computeReferenceValue(open, close, refType);
-		double volatilityMeasure = computeVolatilityMeasure(open, close, high, low, vmType);
+		double volatilityMeasure = computeVolatilityMeasure(open, close, high,
+				low, vmType);
 
-		double upperTrigger = refValue + volatilityMultiplier * volatilityMeasure;
-		double lowerTrigger = refValue - volatilityMultiplier * volatilityMeasure;
+		double upperTrigger = refValue + volatilityMultiplier
+				* volatilityMeasure;
+		double lowerTrigger = refValue - volatilityMultiplier
+				* volatilityMeasure;
 
 		double todayClose = close[close.length - 1];
 		// Buy when today’s close is greater than the upper trigger
 		if (todayClose > upperTrigger) {
-			return new Signal(1);
+			return 1;
 		}
 		// Sell when today’s close is less than the lower trigger
 		else if (todayClose < lowerTrigger) {
-			return new Signal(-1);
+			return -1;
 		} else {
-			return new Signal(0);
+			return 0;
 		}
 	}
 
-	public double computeVolatilityMeasure(double[] open, double[] close, double[] high,
-			double[] low, int volatilityMeasureType) {
+	public double computeVolatilityMeasure(double[] open, double[] close,
+			double[] high, double[] low, int volatilityMeasureType) {
 		switch (volatilityMeasureType) {
 		case VMT_PRICE_CHANGE_STD:
 			return computePriceChangeSTD(open, close);
@@ -80,11 +83,13 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 		case VMT_ATR:
 			return computeATR(close, high, low);
 		default:
-			throw new RuntimeException("unsupported VolatilityMeasureType " + volatilityMeasureType);
+			throw new RuntimeException("unsupported VolatilityMeasureType "
+					+ volatilityMeasureType);
 		}
 	}
 
-	public double computeReferenceValue(double[] open, double[] close, int referenceValueType) {
+	public double computeReferenceValue(double[] open, double[] close,
+			int referenceValueType) {
 		switch (referenceValueType) {
 		case RVT_PREVIOUS_CLOSE:
 			return close[close.length - 2];
@@ -92,11 +97,12 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 			return open[open.length - 1];
 		case RVT_CLOSE_MA:
 			int maPeriod = 5;
-			double[] sma = new MAEntrySignalGenerator().computeMA(close, maPeriod,
-					MAEntrySignalGenerator.MA_TYPE_SMA);
+			double[] sma = new MAEntrySignalGenerator().computeMA(close,
+					maPeriod, MAEntrySignalGenerator.MA_TYPE_SMA);
 			return sma[sma.length - 1];
 		default:
-			throw new RuntimeException("unsupported ReferenceValueType " + referenceValueType);
+			throw new RuntimeException("unsupported ReferenceValueType "
+					+ referenceValueType);
 		}
 	}
 

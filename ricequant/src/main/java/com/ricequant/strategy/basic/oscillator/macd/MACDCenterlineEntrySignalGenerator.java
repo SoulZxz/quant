@@ -1,7 +1,6 @@
 package com.ricequant.strategy.basic.oscillator.macd;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
@@ -37,7 +36,7 @@ public class MACDCenterlineEntrySignalGenerator extends MACDComputer implements
 	private int signalPeriod;
 
 	@Override
-	public Signal generateSignal(IHStatistics stat) {
+	public double generateSignal(IHStatistics stat) {
 		IHStatisticsHistory history = stat.history(period, HPeriod.Day);
 		double[] close = history.getClosingPrice();
 
@@ -54,13 +53,13 @@ public class MACDCenterlineEntrySignalGenerator extends MACDComputer implements
 
 		// macd上升，穿过0，买入
 		if (currentMACD > 0 && yesterdayMACD < 0) {
-			return new Signal(1);
+			return 1;
 		}
 		// madc下降，穿过0，卖出
 		else if (currentMACD < 0 && yesterdayMACD > 0) {
-			return new Signal(-1);
+			return -1;
 		} else {
-			return new Signal(0);
+			return 0;
 		}
 	}
 

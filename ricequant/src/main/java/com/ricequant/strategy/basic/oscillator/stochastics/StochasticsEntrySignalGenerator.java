@@ -1,7 +1,6 @@
 package com.ricequant.strategy.basic.oscillator.stochastics;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.Signal;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
@@ -69,13 +68,14 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 	private double overbought;
 
 	@Override
-	public Signal generateSignal(IHStatistics stat) {
+	public double generateSignal(IHStatistics stat) {
 		IHStatisticsHistory history = stat.history(period + 1, HPeriod.Day);
 		double[] close = history.getClosingPrice();
 		double[] high = history.getHighPrice();
 		double[] low = history.getLowPrice();
 
-		double[][] result = computeSlowStochastic(close, high, low, period, maPeriod);
+		double[][] result = computeSlowStochastic(close, high, low, period,
+				maPeriod);
 		double[] slowK = result[0];
 		double[] slowD = result[1];
 
@@ -91,14 +91,16 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 		double slowKDelta = currentSlowK - lastSlowK;
 
 		// slowK上升, 从下方穿过slowD, slowK > overSold, 买入
-		if (slowKDelta > 0 && previousDelta < 0 && delta > 0 && currentSlowK > oversold) {
-			return new Signal(1);
+		if (slowKDelta > 0 && previousDelta < 0 && delta > 0
+				&& currentSlowK > oversold) {
+			return 1;
 		}
 		// slowK下降, 从上方穿过slowD, slowK < overbought, 卖出
-		else if (slowKDelta < 0 && previousDelta > 0 && delta < 0 && currentSlowK < overbought) {
-			return new Signal(-1);
+		else if (slowKDelta < 0 && previousDelta > 0 && delta < 0
+				&& currentSlowK < overbought) {
+			return -1;
 		} else {
-			return new Signal(0);
+			return 0;
 		}
 	}
 
@@ -112,8 +114,8 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 	 * @param maPeriod
 	 * @return 2维数组, [0]是slowK, [1]是slowD
 	 */
-	public double[][] computeSlowStochastic(double[] close, double[] high, double[] low,
-			int period, int maPeriod) {
+	public double[][] computeSlowStochastic(double[] close, double[] high,
+			double[] low, int period, int maPeriod) {
 		MInteger begin = new MInteger();
 		MInteger length = new MInteger();
 		int resultLegnth = close.length - period + 1;
@@ -123,8 +125,8 @@ public class StochasticsEntrySignalGenerator implements EntrySignalGenerator {
 		result[0] = slowK;
 		result[1] = slowD;
 
-		core.stoch(0, close.length - 1, high, low, close, period, maPeriod, MAType.Sma, maPeriod,
-				MAType.Sma, begin, length, slowK, slowD);
+		core.stoch(0, close.length - 1, high, low, close, period, maPeriod,
+				MAType.Sma, maPeriod, MAType.Sma, begin, length, slowK, slowD);
 
 		return result;
 	}
