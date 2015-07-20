@@ -6,10 +6,12 @@
 	<version>0.0.1-SNAPSHOT</version>
 
 	<repositories>
+	<!-- 
 		<repository>
 			<id>repo-mirror</id>
 			<url>http://maven.net.cn/content/groups/public/</url>
 		</repository>
+		 -->
 		<repository>
 			<id>central</id>
 			<name>Maven Repository Switchboard</name>
@@ -37,10 +39,12 @@
 	</repositories>
 
 	<pluginRepositories>
+	<!-- 
 		<pluginRepository>
 			<id>plugin-repo-mirror</id>
 			<url>http://maven.net.cn/content/groups/public/</url>
 		</pluginRepository>
+		 -->
 		<pluginRepository>
 			<id>maven2-repository.dev.java.net</id>
 			<name>Java.net Repository for Maven</name>
@@ -63,9 +67,21 @@
 		<dependency>
 			<groupId>org.testng</groupId>
 			<artifactId>testng</artifactId>
-			<version>6.1.1</version>
+			<version>6.9.5</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>2.4</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-lang</groupId>
+			<artifactId>commons-lang</artifactId>
+			<version>2.6</version>
+			<scope>test</scope>
+		</dependency>			
 	</dependencies>
 
 	<build>

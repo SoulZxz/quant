@@ -2,28 +2,74 @@ package com.ricequant.strategy.basic.oscillator.macd;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
 import com.ricequant.strategy.basic.Signal;
+import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
+import com.ricequant.strategy.def.IHStatisticsHistory;
 
 /**
- * Interpretation
+ * 1.Signal Line Crossovers
  * 
- * As with MACD, the MACD-Histogram is also designed to identify convergence,
- * divergence and crossovers. The MACD-Histogram, however, is measuring the
- * distance between MACD and its signal line. The histogram is positive when
- * MACD is above its signal line. Positive values increase as MACD diverges
- * further from its signal line (to the upside). Positive values decrease as
- * MACD and its signal line converge. The MACD-Histogram crosses the zero line
- * as MACD crosses below its signal line. The indicator is negative when MACD is
- * below its signal line. Negative values increase as MACD diverges further from
- * its signal line (to the downside). Conversely, negative values decrease as
- * MACD converges on its signal line.
+ * Signal line crossovers are the most common MACD signals. The signal line is a
+ * 9-day EMA of the MACD Line. As a moving average of the indicator, it trails
+ * the MACD and makes it easier to spot MACD turns. A bullish crossover occurs
+ * when the MACD turns up and crosses above the signal line. A bearish crossover
+ * occurs when the MACD turns down and crosses below the signal line. Crossovers
+ * can last a few days or a few weeks, it all depends on the strength of the
+ * move.
+ * 
+ * 2.Centerline Crossovers ( only take them in strong trend, ignore them in
+ * whipsaw )
+ * 
+ * Centerline crossovers are the next most common MACD signals. A bullish
+ * centerline crossover occurs when the MACD Line moves above the zero line to
+ * turn positive. This happens when the 12-day EMA of the underlying security
+ * moves above the 26-day EMA. A bearish centerline crossover occurs when the
+ * MACD moves below the zero line to turn negative. This happens when the 12-day
+ * EMA moves below the 26-day EMA.
+ * 
+ * Centerline crossovers can last a few days or a few months. It all depends on
+ * the strength of the trend. The MACD will remain positive as long as there is
+ * a sustained uptrend. The MACD will remain negative when there is a sustained
+ * downtrend.
  */
 public class MACDEntrySignalGenerator implements EntrySignalGenerator {
 
+	/**
+	 * >= slowPeriod + 1
+	 */
+	private int period;
+
+	private int fastPeriod;
+
+	private int slowPeriod;
+
+	private int signalPeriod;
+
 	@Override
 	public Signal generateSignal(IHStatistics stat) {
-		// TODO Auto-generated method stub
-		return null;
+		IHStatisticsHistory history = stat.history(period, HPeriod.Day);
+		double[] close = history.getClosingPrice();
+
+		MACDComputer computer = new MACDComputer();
+		MACDItem[] result = computer.compute(close, fastPeriod, slowPeriod,
+				signalPeriod);
+
+		MACDItem current = result[result.length - 1];
+		MACDItem yesterday = result[result.length - 2];
+		double macdDelta = current.getValue() - yesterday.getValue();
+		double yesterdayDelta = yesterday.getValue() - yesterday.getSignal();
+		double currentDelta = current.getValue() - current.getSignal();
+
+		// macd上升，穿过signal line，买入
+		if (macdDelta > 0 && yesterdayDelta < 0 && currentDelta > 0) {
+			return new Signal(1);
+		}
+		// madc下降，穿过signal line，卖出
+		else if (macdDelta < 0 && yesterdayDelta > 0 && currentDelta < 0) {
+			return new Signal(-1);
+		} else {
+			return new Signal(0);
+		}
 	}
 
 }
