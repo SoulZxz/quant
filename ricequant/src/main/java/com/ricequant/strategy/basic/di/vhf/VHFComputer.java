@@ -2,7 +2,7 @@ package com.ricequant.strategy.basic.di.vhf;
 
 public class VHFComputer {
 
-	public double[] compute(double[] close, int period) {
+	public double[] computeVHF(double[] close, int period) {
 		double[] out = new double[close.length - period + 1];
 
 		for (int i = 0; i < out.length; i++) {

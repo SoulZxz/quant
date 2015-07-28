@@ -56,8 +56,8 @@ public class MACDEntrySignalGenerator extends MACDComputer implements
 		double[] values = result[0];
 		double[] signals = result[1];
 
-		int current = result.length - 1;
-		int yesterday = result.length - 2;
+		int current = values.length - 1;
+		int yesterday = values.length - 2;
 		double macdDelta = values[current] - values[yesterday];
 		double yesterdayDelta = values[yesterday] - signals[yesterday];
 		double currentDelta = values[current] - signals[current];

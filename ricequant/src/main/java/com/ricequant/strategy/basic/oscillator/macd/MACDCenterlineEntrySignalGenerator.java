@@ -45,8 +45,8 @@ public class MACDCenterlineEntrySignalGenerator extends MACDComputer implements
 
 		double[] values = result[0];
 
-		int current = result.length - 1;
-		int yesterday = result.length - 2;
+		int current = values.length - 1;
+		int yesterday = values.length - 2;
 
 		double currentMACD = values[current];
 		double yesterdayMACD = values[yesterday];

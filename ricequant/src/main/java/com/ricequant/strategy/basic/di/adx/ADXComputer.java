@@ -5,6 +5,8 @@ import com.tictactec.ta.lib.MInteger;
 
 public class ADXComputer {
 
+	private Core core = new Core();
+
 	/**
 	 * 
 	 * 计算adx
@@ -18,13 +20,14 @@ public class ADXComputer {
 	 *            建议14
 	 * @return
 	 */
-	public double[] compute(double[] close, double[] high, double[] low, int period) {
+	public double[] computeADX(double[] close, double[] high, double[] low,
+			int period) {
 		MInteger begin = new MInteger();
 		MInteger length = new MInteger();
 		double[] out = new double[close.length - period + 1];
 
-		Core core = new Core();
-		core.adx(0, close.length - 1, high, low, close, period, begin, length, out);
+		core.adx(0, close.length - 1, high, low, close, period, begin, length,
+				out);
 		return out;
 	}
 
