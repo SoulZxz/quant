@@ -8,7 +8,6 @@ import com.ricequant.strategy.def.IHStatisticsHistory;
 import com.ricequant.strategy.support.BaseTest;
 import com.ricequant.strategy.support.HistoryDataProvider;
 
-@Test
 public class MACDComputerTest extends BaseTest {
 
 	@Test
