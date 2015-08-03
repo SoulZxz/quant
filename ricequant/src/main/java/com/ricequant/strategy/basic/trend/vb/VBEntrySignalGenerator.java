@@ -1,9 +1,12 @@
 package com.ricequant.strategy.basic.trend.vb;
 
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import static com.ricequant.strategy.basic.utils.MAComputer.MA_TYPE_SMA;
+import static com.ricequant.strategy.basic.utils.MAComputer.computeMA;
+import static com.ricequant.strategy.basic.utils.VolatilityComputer.computeATR;
+import static com.ricequant.strategy.basic.utils.VolatilityComputer.computePriceChangeSTD;
+import static com.ricequant.strategy.basic.utils.VolatilityComputer.computePriceSTD;
 
 import com.ricequant.strategy.basic.EntrySignalGenerator;
-import com.ricequant.strategy.basic.trend.ma.MAEntrySignalGenerator;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
 
@@ -34,8 +37,7 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 
 	private double volatilityMultiplier;
 
-	public VBEntrySignalGenerator(int period, int refType, int vmType,
-			double volatilityMultiplier) {
+	public VBEntrySignalGenerator(int period, int refType, int vmType, double volatilityMultiplier) {
 		super();
 		this.period = period;
 		this.refType = refType;
@@ -52,13 +54,10 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 		double[] low = stat.history(period, HPeriod.Day).getLowPrice();
 
 		double refValue = computeReferenceValue(open, close, refType);
-		double volatilityMeasure = computeVolatilityMeasure(open, close, high,
-				low, vmType);
+		double volatilityMeasure = computeVolatilityMeasure(open, close, high, low, vmType);
 
-		double upperTrigger = refValue + volatilityMultiplier
-				* volatilityMeasure;
-		double lowerTrigger = refValue - volatilityMultiplier
-				* volatilityMeasure;
+		double upperTrigger = refValue + volatilityMultiplier * volatilityMeasure;
+		double lowerTrigger = refValue - volatilityMultiplier * volatilityMeasure;
 
 		double todayClose = close[close.length - 1];
 		// Buy when today’s close is greater than the upper trigger
@@ -73,8 +72,8 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 		}
 	}
 
-	public double computeVolatilityMeasure(double[] open, double[] close,
-			double[] high, double[] low, int volatilityMeasureType) {
+	public double computeVolatilityMeasure(double[] open, double[] close, double[] high,
+			double[] low, int volatilityMeasureType) {
 		switch (volatilityMeasureType) {
 		case VMT_PRICE_CHANGE_STD:
 			return computePriceChangeSTD(open, close);
@@ -83,13 +82,11 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 		case VMT_ATR:
 			return computeATR(close, high, low);
 		default:
-			throw new RuntimeException("unsupported VolatilityMeasureType "
-					+ volatilityMeasureType);
+			throw new RuntimeException("unsupported VolatilityMeasureType " + volatilityMeasureType);
 		}
 	}
 
-	public double computeReferenceValue(double[] open, double[] close,
-			int referenceValueType) {
+	public double computeReferenceValue(double[] open, double[] close, int referenceValueType) {
 		switch (referenceValueType) {
 		case RVT_PREVIOUS_CLOSE:
 			return close[close.length - 2];
@@ -97,51 +94,11 @@ public class VBEntrySignalGenerator implements EntrySignalGenerator {
 			return open[open.length - 1];
 		case RVT_CLOSE_MA:
 			int maPeriod = 5;
-			double[] sma = new MAEntrySignalGenerator().computeMA(close,
-					maPeriod, MAEntrySignalGenerator.MA_TYPE_SMA);
+			double[] sma = computeMA(close, maPeriod, MA_TYPE_SMA);
 			return sma[sma.length - 1];
 		default:
-			throw new RuntimeException("unsupported ReferenceValueType "
-					+ referenceValueType);
+			throw new RuntimeException("unsupported ReferenceValueType " + referenceValueType);
 		}
 	}
 
-	private double computePriceChangeSTD(double[] open, double[] close) {
-		SummaryStatistics stats = new SummaryStatistics();
-		for (int i = 0; i < open.length; i++) {
-			stats.addValue(close[i] - open[i]);
-		}
-
-		return stats.getStandardDeviation();
-	}
-
-	/**
-	 * 以close价计算
-	 *
-	 * @param close
-	 * @return
-	 */
-	private double computePriceSTD(double[] close) {
-		SummaryStatistics stats = new SummaryStatistics();
-		for (int i = 0; i < close.length; i++) {
-			stats.addValue(close[i]);
-		}
-
-		return stats.getStandardDeviation();
-	}
-
-	private double computeATR(double[] close, double[] high, double[] low) {
-		int today = close.length - 1;
-		int yesterday = close.length - 2;
-
-		// Today’s high minus today’s low
-		double m1 = Math.abs(high[today] - low[today]);
-		// Today’s high minus yesterday’s close
-		double m2 = Math.abs(high[today] - close[yesterday]);
-		// Yesterday’s close minus today’s low
-		double m3 = Math.abs(close[yesterday] - low[today]);
-
-		double max12 = Math.max(m1, m2);
-		return Math.max(max12, m3);
-	}
 }

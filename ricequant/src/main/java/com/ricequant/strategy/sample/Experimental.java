@@ -18,6 +18,12 @@ import com.tictactec.ta.lib.MInteger;
 
 public class Experimental implements IHStrategy {
 
+	public static final int MA_TYPE_SMA = 1;
+
+	public static final int MA_TYPE_EMA = 2;
+
+	public static final int MA_TYPE_WMA = 3;
+
 	private IHInformer theInformer;
 
 	private Core core = new Core();
@@ -26,13 +32,19 @@ public class Experimental implements IHStrategy {
 
 	private int period = 20;
 
+	private int curveFittingLookBack = 3;
+
+	private double vhfTH = 0.33;
+
+	private boolean filterEnabled = true;
+
 	private boolean allowShortSell = true;
 
 	@Override
 	public void init(IHInformer informer, IHInitializers initializers) {
 		theInformer = informer;
 
-		String stockCode = "000024.XSHE";
+		String stockCode = "000528.XSHE";
 
 		initializers.instruments((universe) -> {
 			return universe.add(stockCode);
@@ -59,11 +71,18 @@ public class Experimental implements IHStrategy {
 		double[] high = tsMatrix[1];
 		double[] low = tsMatrix[2];
 
-		double signal = this.hasCrossSignal(Arrays.copyOfRange(high, high.length - 3, high.length),
-				Arrays.copyOfRange(low, low.length - 3, low.length));
-		if (signal > 0) {
+		// TODO 加filter和止损策略
+		double signal = this.hasCrossSignal(
+				Arrays.copyOfRange(high, high.length - curveFittingLookBack, high.length),
+				Arrays.copyOfRange(low, low.length - curveFittingLookBack, low.length));
+		double[] closing = history.getClosingPrice();
+		boolean filterPass = this.filterMA(
+				Arrays.copyOfRange(closing, closing.length - period, closing.length), period / 2,
+				signal);
+
+		if (signal > 0 && filterPass) {
 			this.entry(trans, info, stat.getInstrument().getSymbol(), 1);
-		} else if (signal < 0) {
+		} else if (signal < 0 && filterPass) {
 			this.entry(trans, info, stat.getInstrument().getSymbol(), -1);
 		}
 
@@ -71,9 +90,9 @@ public class Experimental implements IHStrategy {
 				+ ts[ts.length - 1];
 		theInformer.info(infoStr);
 
-		theInformer.plot("ADX", adx[adx.length - 1]);
-		theInformer.plot("VHF", vhf[vhf.length - 1]);
-		theInformer.plot("TS", ts[ts.length - 1]);
+		// theInformer.plot("ADX", adx[adx.length - 1]);
+		// theInformer.plot("VHF", vhf[vhf.length - 1]);
+		// theInformer.plot("TS", ts[ts.length - 1]);
 		theInformer.plot("CLOSING", stat.getClosingPrice());
 	}
 
@@ -137,7 +156,6 @@ public class Experimental implements IHStrategy {
 
 			double hCoeff = fitter.fit(hps.toList())[1];
 			double lCoeff = fitter.fit(lps.toList())[1];
-			// TODO 加filter和止损策略
 			double direction = hCoeff - lCoeff;
 
 			if (direction > 0) {
@@ -174,6 +192,13 @@ public class Experimental implements IHStrategy {
 		return out;
 	}
 
+	/**
+	 * 修正过的VHF定义, 正负号表示主移动方向, 正表示主上升, 负表示主下降
+	 *
+	 * @param close
+	 * @param period
+	 * @return
+	 */
 	public double[] computeVHF(double[] close, int period) {
 		double[] out = new double[close.length - period + 1];
 
@@ -181,8 +206,8 @@ public class Experimental implements IHStrategy {
 			double lowestClose = computeLowest(close, period, i);
 			double highestClose = computeHighest(close, period, i);
 			double verticalDist = highestClose - lowestClose;
-			double accumulatedDist = computeAccumulatedDist(close, period, i);
-			out[i] = verticalDist / accumulatedDist;
+
+			out[i] = verticalDist / computeAccumulatedDist(close, period, i);
 		}
 
 		return out;
@@ -256,5 +281,49 @@ public class Experimental implements IHStrategy {
 			sum = sum + Math.abs(input[i] - input[i - 1]);
 		}
 		return sum;
+	}
+
+	private boolean filterVHF(double vhf, double signal) {
+		return !filterEnabled || (Math.abs(vhf) >= vhfTH);
+	}
+
+	public double[] computeMA(double[] input, int period, int maType) {
+		MInteger begin = new MInteger();
+		MInteger length = new MInteger();
+		double[] out = new double[input.length - period + 1];
+
+		switch (maType) {
+		case MA_TYPE_SMA:
+			core.sma(0, input.length - 1, input, period, begin, length, out);
+			break;
+		case MA_TYPE_EMA:
+			core.ema(0, input.length - 1, input, period, begin, length, out);
+			break;
+		case MA_TYPE_WMA:
+			core.wma(0, input.length - 1, input, period, begin, length, out);
+			break;
+		default:
+			throw new RuntimeException("unsupported MaType " + maType);
+		}
+
+		return out;
+	}
+
+	private boolean filterMA(double[] closing, int maPeriod, double signal) {
+		double[] ma = this.computeMA(closing, maPeriod, MA_TYPE_SMA);
+		double lastMa = ma[ma.length - 1];
+		double lastClosing = closing[closing.length - 1];
+
+		if (!filterEnabled) {
+			return true;
+		} else {
+			if (signal > 0) {
+				return lastClosing >= lastMa;
+			} else if (signal < 0) {
+				return lastClosing <= lastMa;
+			} else {
+				return true;
+			}
+		}
 	}
 }
