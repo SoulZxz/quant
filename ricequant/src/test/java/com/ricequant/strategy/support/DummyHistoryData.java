@@ -16,6 +16,8 @@ public class DummyHistoryData implements IHStatisticsHistory {
 
 	private double[] closingPrice;
 
+	private double[] turnoverVolume;
+
 	public double[] getLastPrice() {
 		return lastPrice;
 	}
@@ -56,12 +58,21 @@ public class DummyHistoryData implements IHStatisticsHistory {
 		this.closingPrice = closingPrice;
 	}
 
+	public double[] getTurnoverVolume() {
+		return turnoverVolume;
+	}
+
+	public void setTurnoverVolume(double[] turnoverVolume) {
+		this.turnoverVolume = turnoverVolume;
+	}
+
 	@Override
 	public String toString() {
-		return "DummyHistoryData [highPrice=" + Arrays.toString(highPrice)
-				+ ", lowPrice=" + Arrays.toString(lowPrice) + ", openingPrice="
-				+ Arrays.toString(openingPrice) + ", closingPrice="
-				+ Arrays.toString(closingPrice) + "]";
+		return "DummyHistoryData [lastPrice=" + Arrays.toString(lastPrice) + ", highPrice="
+				+ Arrays.toString(highPrice) + ", lowPrice=" + Arrays.toString(lowPrice)
+				+ ", openingPrice=" + Arrays.toString(openingPrice) + ", closingPrice="
+				+ Arrays.toString(closingPrice) + ", turnoverVolume="
+				+ Arrays.toString(turnoverVolume) + "]";
 	}
 
 }

@@ -1,5 +1,7 @@
 package com.ricequant.strategy.basic.di.adx;
 
+import java.util.Arrays;
+
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 
@@ -39,6 +41,54 @@ public class ADXComputer {
 
 		core.adx(0, close.length - 1, high, low, close, period, begin, length, out);
 		return out;
+	}
+
+	/**
+	 * 根据输入的adx数组判断趋势是否在形成当中
+	 * 
+	 * @param adx
+	 * @param trendingGrayTH
+	 *            判断趋势正在形成 adx的下限值, 比如20-25一般是趋势模糊的值
+	 * @Param trendingTH 强趋势下限值, 一般25
+	 * @param lookbackPeriod
+	 *            从最后adx元素起, 往前取多少个元素做趋势形成判断
+	 * 
+	 * @return
+	 */
+	public boolean adxTrendForming(double[] adx, double trendingGrayTH, double trendingTH,
+			int lookbackPeriod) {
+		double[] adxSubset = Arrays.copyOfRange(adx, adx.length - lookbackPeriod, adx.length);
+		double adxSum = 0;
+		double directionTH = 0.5;
+
+		// adx均值>trendingGrayTH, 总体向上, 有adx>trendingTH 3者满足2个当作形成中
+		boolean hasAdxOverTH = false;
+		double directionIndex = 0;
+		for (int i = 0; i < adxSubset.length - 1; i++) {
+			adxSum += adxSubset[i];
+
+			if (adxSubset[i] > trendingTH) {
+				hasAdxOverTH = true;
+			}
+
+			if (adxSubset[i + 1] > adxSubset[i]) {
+				directionIndex++;
+			}
+		}
+		boolean avgOverTH = adxSum / lookbackPeriod >= trendingGrayTH;
+		boolean hasUpDirection = directionIndex / lookbackPeriod > directionTH;
+
+		int satisfied = 0;
+		if (hasAdxOverTH) {
+			satisfied++;
+		}
+		if (avgOverTH) {
+			satisfied++;
+		}
+		if (hasUpDirection) {
+			satisfied++;
+		}
+		return satisfied >= 2;
 	}
 
 }

@@ -21,4 +21,5 @@ public interface IHStatisticsHistory {
 
 	double[] getClosingPrice();
 
+	double[] getTurnoverVolume();
 }
