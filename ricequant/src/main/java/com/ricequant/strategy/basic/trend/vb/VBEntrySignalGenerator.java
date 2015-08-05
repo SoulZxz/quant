@@ -17,17 +17,17 @@ import com.ricequant.strategy.def.IHStatistics;
  */
 public class VBEntrySignalGenerator implements EntrySignalGenerator {
 
-	private static final int VMT_PRICE_CHANGE_STD = 1;
+	public static final int VMT_PRICE_CHANGE_STD = 1;
 
-	private static final int VMT_PRICE_STD = 2;
+	public static final int VMT_PRICE_STD = 2;
 
-	private static final int VMT_ATR = 3;
+	public static final int VMT_ATR = 3;
 
-	private static final int RVT_PREVIOUS_CLOSE = 1;
+	public static final int RVT_PREVIOUS_CLOSE = 1;
 
-	private static final int RVT_CURRENT_OPEN = 2;
+	public static final int RVT_CURRENT_OPEN = 2;
 
-	private static final int RVT_CLOSE_MA = 3;
+	public static final int RVT_CLOSE_MA = 3;
 
 	private int period;
 

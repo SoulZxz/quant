@@ -243,7 +243,7 @@ public class Experimental implements IHStrategy {
 			double currentClose = close[(period - 1) + j];
 
 			for (int i = j; i < j + period; i++) {
-				if (currentClose < low[i] && currentClose <= high[i]) {
+				if (currentClose < low[i]) {
 					lower++;
 				} else if (currentClose > high[i]) {
 					higher++;
