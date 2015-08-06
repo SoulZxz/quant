@@ -56,7 +56,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private int longPeriodType = MA_TYPE_SMA;
 
-	private double delta = 0;
+	private int maRecentPeriod = 1;
 
 	/** other **/
 	private String stockCode = "000528.XSHE";
@@ -108,7 +108,12 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		if (maSignal != 0) {
 			int direction = maSignal > 0 ? 1 : -1;
 			theInformer.info("ma trade " + direction + " adx " + currentAdx);
-			if (!filterEnabled || currentAdx >= adxTrendingTH) {
+			boolean confirmedTrend = currentAdx >= adxTrendingTH;
+			boolean possibleTrend = currentAdx > adxTrendingGrayTH
+					&& currentAdx < adxTrendingTH
+					&& adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
+							adxTrendFormingLookbackPeriod);
+			if (!filterEnabled || confirmedTrend || possibleTrend) {
 				this.entry(trans, info, stockCode, direction);
 			}
 		}
@@ -134,8 +139,10 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	public double generateMASignal(IHStatistics stat) {
 		// 储存进去对应的数组
-		double[] closeShort = stat.history(shortPeriod, HPeriod.Day).getClosingPrice();
-		double[] closeLong = stat.history(longPeriod, HPeriod.Day).getClosingPrice();
+		double[] closeShort = stat.history(shortPeriod + maRecentPeriod, HPeriod.Day)
+				.getClosingPrice();
+		double[] closeLong = stat.history(longPeriod + maRecentPeriod, HPeriod.Day)
+				.getClosingPrice();
 
 		// 计算短期MA
 		double[] shortMA = computeMA(closeShort, shortPeriod, shortPeriodType);
@@ -143,17 +150,28 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		double[] longMA = computeMA(closeLong, longPeriod, longPeriodType);
 
 		// 计算当天的短期MA与长期MA的差值
-		double previousDelta = delta;
-		delta = shortMA[shortMA.length - 1] - longMA[longMA.length - 1];
+		int crossed = 0;
+
+		double delta = shortMA[0] - longMA[0];
+		for (int i = 0; i < shortMA.length; i++) {
+			double previousDelta = delta;
+			delta = shortMA[i] - longMA[i];
+
+			// 短期MA与长期MA值出现交叉, 短期MA处于下降趋势, 长期MA处于上升趋势
+			// 简单起见信号强度绝对值统一设置成1
+			if ((previousDelta > 0) && delta < 0) {
+				crossed = crossed - 1;
+			}
+			// 短期MA与长期MA值出现交叉, 短期MA处于上升趋势,长期MA处于下降趋势
+			else if ((previousDelta < 0) && delta > 0) {
+				crossed = crossed + 1;
+			}
+		}
 
 		// TODO 加入whipsaws detection
-		// 短期MA与长期MA值出现交叉, 短期MA处于下降趋势, 长期MA处于上升趋势
-		// 简单起见信号强度绝对值统一设置成1
-		if ((previousDelta > 0) && delta < 0) {
+		if (crossed < 0) {
 			return -1;
-		}
-		// 短期MA与长期MA值出现交叉, 短期MA处于上升趋势,长期MA处于下降趋势
-		else if ((previousDelta < 0) && delta > 0) {
+		} else if (crossed > 0) {
 			return 1;
 		}
 		// 什么也不做
