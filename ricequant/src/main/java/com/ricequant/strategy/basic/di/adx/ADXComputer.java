@@ -2,6 +2,9 @@ package com.ricequant.strategy.basic.di.adx;
 
 import java.util.Arrays;
 
+import org.apache.commons.math3.fitting.PolynomialCurveFitter;
+import org.apache.commons.math3.fitting.WeightedObservedPoints;
+
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 
@@ -77,6 +80,7 @@ public class ADXComputer {
 		}
 		boolean avgOverTH = adxSum / lookbackPeriod >= trendingGrayTH;
 		boolean hasUpDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean adxTrendBoosting = adxTrendBoosting(adxSubset, 1);
 
 		int satisfied = 0;
 		if (hasAdxOverTH) {
@@ -88,7 +92,34 @@ public class ADXComputer {
 		if (hasUpDirection) {
 			satisfied++;
 		}
+		if (adxTrendBoosting) {
+			satisfied++;
+		}
 		return satisfied >= 2;
+	}
+
+	/**
+	 * 判断adx是否快速上升中
+	 * 
+	 * @param adx
+	 * @param coeffTH
+	 * @return
+	 */
+	public boolean adxTrendBoosting(double[] adx, double coeffTH) {
+		double min = adx[0];
+		for (double adxValue : adx) {
+			min = Math.min(min, adxValue);
+		}
+
+		// normalize
+		WeightedObservedPoints points = new WeightedObservedPoints();
+		for (int i = 0; i < adx.length; i++) {
+			points.add(i, adx[i] - min);
+		}
+
+		// 1阶拟合
+		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+		return fitter.fit(points.toList())[1] >= coeffTH;
 	}
 
 }

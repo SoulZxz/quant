@@ -10,6 +10,8 @@ public class ProfitExitSignalGenerator implements ExitSignalGenerator {
 
 	private double lossTrigger;
 
+	private double highestUnsecuredProfitHeld;
+
 	public ProfitExitSignalGenerator(double profitTarget, double lossTrigger) {
 		super();
 		this.profitTarget = profitTarget;
