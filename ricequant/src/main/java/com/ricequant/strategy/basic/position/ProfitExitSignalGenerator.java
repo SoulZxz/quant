@@ -10,7 +10,11 @@ public class ProfitExitSignalGenerator implements ExitSignalGenerator {
 
 	private double lossTrigger;
 
-	private double highestUnsecuredProfitHeld;
+	private double highestUnclosedProfitHeld;
+
+	private double currentUnclosedProfitHeld;
+
+	private double unclosedPositionInitValue;
 
 	public ProfitExitSignalGenerator(double profitTarget, double lossTrigger) {
 		super();
@@ -20,12 +24,18 @@ public class ProfitExitSignalGenerator implements ExitSignalGenerator {
 
 	@Override
 	public double generateSignal(IHStatistics stat, IHPortfolio portfolio) {
-		if (portfolio.getProfitAndLoss() <= profitTarget
-				&& portfolio.getProfitAndLoss() >= lossTrigger) {
+		currentUnclosedProfitHeld = currentUnclosedProfitHeld + portfolio.getProfitAndLoss();
+		highestUnclosedProfitHeld = Math.max(highestUnclosedProfitHeld, currentUnclosedProfitHeld);
+
+		double profitAndLossRate = currentUnclosedProfitHeld / unclosedPositionInitValue;
+		double highestProfitRate = highestUnclosedProfitHeld / unclosedPositionInitValue;
+
+		// 达到盈利点, 发止盈信号; 从最高盈利点发生drawdown达到lossTrigger, 止损或止浮盈
+		if (profitAndLossRate <= profitTarget
+				&& profitAndLossRate - highestProfitRate >= lossTrigger) {
 			return 0;
 		} else {
-			// 达到盈利点, 发止盈信号
-			if (portfolio.getProfitAndLoss() > profitTarget) {
+			if (profitAndLossRate > profitTarget) {
 				return 1;
 			} else {
 				return -1;

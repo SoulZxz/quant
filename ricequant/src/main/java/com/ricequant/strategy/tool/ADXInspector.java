@@ -1,4 +1,4 @@
-package com.ricequant.strategy.sample;
+package com.ricequant.strategy.tool;
 
 import java.util.Arrays;
 

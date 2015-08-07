@@ -45,7 +45,7 @@ public interface IHPortfolio {
 	double getPortfolioValue();
 
 	/**
-	 * 获得投资组合的目前日期的金钱盈亏
+	 * 获得投资组合的目前日期(单日)的金钱盈亏
 	 * 
 	 * @return
 	 */

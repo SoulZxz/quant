@@ -1,13 +1,18 @@
-package com.ricequant.strategy.basic.position;
+package com.ricequant.strategy.sample;
 
 import com.ricequant.strategy.def.IHInfoPacks;
-import com.ricequant.strategy.def.IHPosition;
+import com.ricequant.strategy.def.IHInformer;
+import com.ricequant.strategy.def.IHInitializers;
+import com.ricequant.strategy.def.IHPortfolio;
 import com.ricequant.strategy.def.IHStatistics;
+import com.ricequant.strategy.def.IHStrategy;
 import com.ricequant.strategy.def.IHTransactionFactory;
 
-public class PositionStrategy {
+public class ProfitLossExit implements IHStrategy {
 
-	private static final int PST_PERCENT = 1;
+	private double profitTarget = 0.05;
+
+	private double lossTrigger = -0.05;
 
 	private double highestUnclosedProfitHeld;
 
@@ -15,7 +20,72 @@ public class PositionStrategy {
 
 	private double unclosedPositionInitValue;
 
-	private boolean allowShortSell;
+	private String stockCode = "000528.XSHE";
+
+	private IHInformer theInformer;
+
+	private boolean hasPosition = false;
+
+	private boolean allowShortSell = false;
+
+	@Override
+	public void init(IHInformer informer, IHInitializers initializers) {
+		theInformer = informer;
+
+		String stockCode = "000528.XSHE";
+
+		initializers.instruments((universe) -> {
+			return universe.add(stockCode);
+		});
+
+		// 允许卖空
+		initializers.shortsell().allow();
+
+		initializers.events().statistics((stats, info, trans) -> {
+			stats.each((stat) -> {
+				ProfitLossExit.this.eaWork(stats.get(stockCode), info, trans);
+			});
+		});
+	}
+
+	public void eaWork(IHStatistics stat, IHInfoPacks info, IHTransactionFactory trans) {
+		double signal = this.generateSignal(stat, info.portfolio());
+		if (!hasPosition) {
+			entry(trans, info, stat, stockCode, 1);
+			hasPosition = true;
+			theInformer.info("buy");
+		} else {
+			if (signal != 0) {
+				exit(trans, info, stockCode);
+				hasPosition = false;
+				theInformer.info("sell");
+			}
+		}
+	}
+
+	public double generateSignal(IHStatistics stat, IHPortfolio portfolio) {
+		currentUnclosedProfitHeld = currentUnclosedProfitHeld + portfolio.getProfitAndLoss();
+		highestUnclosedProfitHeld = Math.max(highestUnclosedProfitHeld, currentUnclosedProfitHeld);
+
+		double profitAndLossRate = currentUnclosedProfitHeld / unclosedPositionInitValue;
+		double highestProfitRate = highestUnclosedProfitHeld / unclosedPositionInitValue;
+
+		theInformer.info("currentUnclosedProfitHeld " + currentUnclosedProfitHeld
+				+ " unclosedPositionInitValue " + unclosedPositionInitValue
+				+ " highestUnclosedProfitHeld " + highestUnclosedProfitHeld);
+
+		// 达到盈利点, 发止盈信号; 从最高盈利点发生drawdown达到lossTrigger, 止损或止浮盈
+		if (profitAndLossRate <= profitTarget
+				&& profitAndLossRate - highestProfitRate >= lossTrigger) {
+			return 0;
+		} else {
+			if (profitAndLossRate > profitTarget) {
+				return 1;
+			} else {
+				return -1;
+			}
+		}
+	}
 
 	public void entry(IHTransactionFactory trans, IHInfoPacks info, IHStatistics stat,
 			String stockCode, int direction) {
@@ -82,41 +152,6 @@ public class PositionStrategy {
 			unclosedPositionInitValue = 0;
 			currentUnclosedProfitHeld = 0;
 			highestUnclosedProfitHeld = 0;
-		}
-	}
-
-	public void buy(IHTransactionFactory trans, IHInfoPacks info, String stockCode,
-			int strategyType, double param) {
-		switch (strategyType) {
-		case PST_PERCENT:
-			buyPercent(trans, info, stockCode, param);
-			break;
-		default:
-			throw new RuntimeException("unsupported strategyType " + strategyType);
-		}
-	}
-
-	public void sell(IHTransactionFactory trans, IHInfoPacks info, String stockCode,
-			int strategyType, double param) {
-		switch (strategyType) {
-		case PST_PERCENT:
-			sellPercent(trans, info, stockCode, param);
-			break;
-		default:
-			throw new RuntimeException("unsupported strategyType " + strategyType);
-		}
-	}
-
-	public void buyPercent(IHTransactionFactory trans, IHInfoPacks info, String stockCode,
-			double percent) {
-		trans.buy(stockCode).percent(percent).commit();
-	}
-
-	public void sellPercent(IHTransactionFactory trans, IHInfoPacks info, String stockCode,
-			double percent) {
-		IHPosition position = info.position(stockCode);
-		if (allowShortSell || position.getNonClosedTradeQuantity() != 0) {
-			trans.sell(stockCode).percent(percent).commit();
 		}
 	}
 }

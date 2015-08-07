@@ -1,9 +1,7 @@
-package com.ricequant.strategy.sample;
+package com.ricequant.strategy.my;
 
 import java.util.Arrays;
 
-import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
@@ -11,7 +9,6 @@ import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHInfoPacks;
 import com.ricequant.strategy.def.IHInformer;
 import com.ricequant.strategy.def.IHInitializers;
-import com.ricequant.strategy.def.IHPortfolio;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
 import com.ricequant.strategy.def.IHStrategy;
@@ -54,7 +51,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 	private int adxTrendFormingLookbackPeriod = 5;
 
 	/** ma **/
-	private int shortPeriod = 10;
+	private int shortPeriod = 14;
 
 	private int longPeriod = 40;
 
@@ -62,12 +59,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private int longPeriodType = MA_TYPE_SMA;
 
-	private int maRecentPeriod = 1;
-
-	/** exit **/
-	private double profitTarget = 0.05;
-
-	private double lossTrigger = -0.05;
+	private int maRecentPeriod = 5;
 
 	/** other **/
 	private String stockCode = "000528.XSHE";
@@ -106,11 +98,14 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 			int direction = rsiSignal > 0 ? 1 : -1;
 			theInformer.info("rsi trade " + direction + " adx " + currentAdx);
 			boolean confirmedNoTrend = currentAdx < adxTrendingGrayTH;
-			boolean possibleNoTrend = currentAdx > adxTrendingGrayTH
+			boolean trendForming = currentAdx > adxTrendingGrayTH
 					&& currentAdx < adxTrendingTH
-					&& !adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
+					&& adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
 							adxTrendFormingLookbackPeriod);
-			if (!filterEnabled || confirmedNoTrend || possibleNoTrend) {
+			boolean trendWaning = currentAdx > adxTrendingTH
+					&& adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
+							adxTrendFormingLookbackPeriod);
+			if (!filterEnabled || confirmedNoTrend || !trendForming || trendWaning) {
 				this.entry(trans, info, stockCode, direction);
 			}
 		}
@@ -119,21 +114,16 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		if (maSignal != 0) {
 			int direction = maSignal > 0 ? 1 : -1;
 			theInformer.info("ma trade " + direction + " adx " + currentAdx);
-			boolean confirmedTrend = currentAdx >= adxTrendingTH;
-			boolean possibleTrend = currentAdx > adxTrendingGrayTH
+			boolean trendForming = currentAdx > adxTrendingGrayTH
 					&& currentAdx < adxTrendingTH
 					&& adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
 							adxTrendFormingLookbackPeriod);
-			if (!filterEnabled || confirmedTrend || possibleTrend) {
+			boolean trendWaning = currentAdx >= adxTrendingTH
+					&& adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
+							adxTrendFormingLookbackPeriod);
+			if (!filterEnabled || trendForming || !trendWaning) {
 				this.entry(trans, info, stockCode, direction);
 			}
-		}
-
-		double exitSignal = this.generateExitSignal(stat, info.portfolio());
-		if (exitSignal != 0) {
-			String direction = exitSignal > 0 ? "profit" : "loss";
-			theInformer.info("profit/loss exit " + direction);
-			this.exit(trans, info, stockCode);
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());
@@ -195,20 +185,6 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		// 什么也不做
 		else {
 			return 0;
-		}
-	}
-
-	public double generateExitSignal(IHStatistics stat, IHPortfolio portfolio) {
-		if (portfolio.getProfitAndLoss() <= profitTarget
-				&& portfolio.getProfitAndLoss() >= lossTrigger) {
-			return 0;
-		} else {
-			// 达到盈利点, 发止盈信号
-			if (portfolio.getProfitAndLoss() > profitTarget) {
-				return 1;
-			} else {
-				return -1;
-			}
 		}
 	}
 
@@ -305,6 +281,69 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		return satisfied >= 2;
 	}
 
+	public boolean adxTrendFalling(double[] adx, double coeffTH) {
+		double max = adx[0];
+		for (double adxValue : adx) {
+			max = Math.max(max, adxValue);
+		}
+
+		// normalize
+		WeightedObservedPoints points = new WeightedObservedPoints();
+		for (int i = 0; i < adx.length; i++) {
+			points.add(i, adx[i] - max);
+		}
+
+		// 1阶拟合
+		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+		return fitter.fit(points.toList())[1] <= coeffTH;
+	}
+
+	public boolean adxTrendWaning(double[] adx, double trendingGrayTH, double trendingTH,
+			int lookbackPeriod) {
+		double[] adxSubset = Arrays.copyOfRange(adx, adx.length - lookbackPeriod, adx.length);
+		double adxSum = 0;
+		double directionTH = 0.5;
+
+		// adx均值<trendingTH, 总体向下, 有adx<trendingGrayTH, adx快速下降 4者满足2个当作衰减中
+		boolean hasAdxBelowTH = false;
+		double directionIndex = 0;
+		for (int i = 0; i < adxSubset.length - 1; i++) {
+			adxSum += adxSubset[i];
+
+			if (adxSubset[i] < trendingGrayTH) {
+				hasAdxBelowTH = true;
+			}
+
+			if (adxSubset[i + 1] < adxSubset[i]) {
+				directionIndex++;
+			}
+		}
+		boolean avgBelowTH = adxSum / lookbackPeriod <= trendingTH;
+		boolean hasDownDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean adxTrendFalling = adxTrendFalling(adxSubset, -1);
+
+		theInformer.info("test trend waning " + Arrays.toString(adxSubset));
+		theInformer.info("hasAdxBelowTH " + hasAdxBelowTH);
+		theInformer.info("avgBelowTH " + avgBelowTH);
+		theInformer.info("hasDownDirection " + hasDownDirection);
+		theInformer.info("adxTrendFalling " + adxTrendFalling);
+
+		int satisfied = 0;
+		if (hasAdxBelowTH) {
+			satisfied++;
+		}
+		if (avgBelowTH) {
+			satisfied++;
+		}
+		if (hasDownDirection) {
+			satisfied++;
+		}
+		if (adxTrendFalling) {
+			satisfied++;
+		}
+		return satisfied >= 2;
+	}
+
 	public double[] computeMA(double[] input, int period, int maType) {
 		MInteger begin = new MInteger();
 		MInteger length = new MInteger();
@@ -325,114 +364,6 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		}
 
 		return out;
-	}
-
-	public int[] findExtremum(double[] input, int lookbackPeriod, double variancePercent) {
-		double[] samplePoints = Arrays.copyOfRange(input, input.length - lookbackPeriod,
-				input.length);
-		int centerIndex = (lookbackPeriod - 1) / 2;
-
-		// 把x,y正则化到0-1之间
-		double yMin = samplePoints[0];
-		double yMax = samplePoints[0];
-
-		for (double samplePoint : samplePoints) {
-			yMin = Math.min(yMin, samplePoint);
-			yMax = Math.max(yMax, samplePoint);
-		}
-
-		// 如果振幅过小,忽略
-		if (yMax / yMin < 1 + variancePercent) {
-			return new int[] { 0, 0 };
-		} else {
-			// 正则化
-			double[] normalizedSamplePoints = new double[samplePoints.length];
-			for (int i = 0; i < samplePoints.length; i++) {
-				normalizedSamplePoints[i] = (samplePoints[i] - yMin) / (yMax - yMin);
-			}
-
-			// 以中心点分割，分两段做1阶线性拟合, 两段斜率符号要相反
-			if (this.isLinearCoeffDiff(normalizedSamplePoints, centerIndex)) {
-				// 插值拟合导数校验
-				double[] derivatives = this.splineDerivatives(normalizedSamplePoints);
-
-				double firstHalfCoeff = derivatives[centerIndex - 1];
-				double secondHalfCoeff = derivatives[centerIndex + 1];
-
-				int[] result = new int[2];
-				result[0] = 0;
-				// 同向, 非极值
-				if (firstHalfCoeff * secondHalfCoeff < 0) {
-					// 比较相邻值
-					if (firstHalfCoeff > 0 && secondHalfCoeff < 0) {
-						if (samplePoints[centerIndex] >= samplePoints[centerIndex - 1]
-								&& samplePoints[centerIndex] >= samplePoints[centerIndex + 1]) {
-							result[0] = 1;
-							result[1] = centerIndex;
-						}
-					} else {
-						if (samplePoints[centerIndex] <= samplePoints[centerIndex - 1]
-								&& samplePoints[centerIndex] <= samplePoints[centerIndex + 1]) {
-							result[0] = -1;
-							result[1] = centerIndex;
-						}
-					}
-				}
-
-				return result;
-			} else {
-				return new int[] { 0, 0 };
-			}
-		}
-	}
-
-	private boolean isLinearCoeffDiff(double[] input, int centerIndex) {
-		double xStep = 2.0 / (input.length + 1);
-
-		WeightedObservedPoints firstHalf = new WeightedObservedPoints();
-		WeightedObservedPoints secondHalf = new WeightedObservedPoints();
-
-		for (int i = 0; i < input.length; i++) {
-			if (i <= centerIndex) {
-				firstHalf.add(i * xStep, input[i]);
-			}
-
-			if (i >= centerIndex) {
-				secondHalf.add((i - centerIndex) * xStep, input[i]);
-			}
-		}
-
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-
-		double[] firstHalfCoeffs = fitter.fit(firstHalf.toList());
-		double[] secondHalfCoeffs = fitter.fit(secondHalf.toList());
-
-		double firstHalfCoeff = firstHalfCoeffs[1];
-		double secondHalfCoeff = secondHalfCoeffs[1];
-
-		return firstHalfCoeff * secondHalfCoeff < 0;
-	}
-
-	private double[] splineDerivatives(double[] input) {
-		double xStep = 1.0 / input.length;
-
-		double[] x = new double[input.length];
-		double[] y = new double[input.length];
-
-		for (int i = 0; i < input.length; i++) {
-			x[i] = i * xStep;
-			y[i] = input[i];
-		}
-
-		SplineInterpolator fitter = new SplineInterpolator();
-		PolynomialSplineFunction func = fitter.interpolate(x, y);
-
-		double[] derivatives = new double[input.length];
-		for (int i = 0; i < derivatives.length; i++) {
-			derivatives[i] = func.derivative().value(x[i]);
-		}
-
-		return derivatives;
 	}
 
 	public void entry(IHTransactionFactory trans, IHInfoPacks info, String stockCode, int direction) {
@@ -466,17 +397,6 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 					trans.sell(stockCode).percent(100).commit();
 				}
 			}
-		}
-	}
-
-	public void exit(IHTransactionFactory trans, IHInfoPacks info, String stockCode) {
-		int nonClosed = (int) info.position(stockCode).getNonClosedTradeQuantity();
-		if (nonClosed < 0) {
-			// 平掉空头寸
-			trans.buy(stockCode).shares(-nonClosed).commit();
-		} else {
-			// 平掉多头寸
-			trans.sell(stockCode).shares(nonClosed).commit();
 		}
 	}
 }

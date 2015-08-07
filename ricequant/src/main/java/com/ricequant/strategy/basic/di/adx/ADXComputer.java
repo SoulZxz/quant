@@ -64,7 +64,7 @@ public class ADXComputer {
 		double adxSum = 0;
 		double directionTH = 0.5;
 
-		// adx均值>trendingGrayTH, 总体向上, 有adx>trendingTH 3者满足2个当作形成中
+		// adx均值>trendingGrayTH, 总体向上, 有adx>trendingTH, adx快速上升 4者满足2个当作形成中
 		boolean hasAdxOverTH = false;
 		double directionIndex = 0;
 		for (int i = 0; i < adxSubset.length - 1; i++) {
@@ -122,4 +122,79 @@ public class ADXComputer {
 		return fitter.fit(points.toList())[1] >= coeffTH;
 	}
 
+	/**
+	 * 根据输入的adx数组判断趋势是否在衰减当中
+	 * 
+	 * @param adx
+	 * @param trendingGrayTH
+	 *            判断趋势正在消失 adx的下限值, 比如20-25一般是趋势模糊的值
+	 * @Param trendingTH 强趋势下限值, 一般25
+	 * @param lookbackPeriod
+	 *            从最后adx元素起, 往前取多少个元素做趋势衰减判断
+	 * 
+	 * @return
+	 */
+	public boolean adxTrendWaning(double[] adx, double trendingGrayTH, double trendingTH,
+			int lookbackPeriod) {
+		double[] adxSubset = Arrays.copyOfRange(adx, adx.length - lookbackPeriod, adx.length);
+		double adxSum = 0;
+		double directionTH = 0.5;
+
+		// adx均值<trendingTH, 总体向下, 有adx<trendingGrayTH, adx快速下降 4者满足2个当作衰减中
+		boolean hasAdxBelowTH = false;
+		double directionIndex = 0;
+		for (int i = 0; i < adxSubset.length - 1; i++) {
+			adxSum += adxSubset[i];
+
+			if (adxSubset[i] < trendingGrayTH) {
+				hasAdxBelowTH = true;
+			}
+
+			if (adxSubset[i + 1] < adxSubset[i]) {
+				directionIndex++;
+			}
+		}
+		boolean avgBelowTH = adxSum / lookbackPeriod <= trendingTH;
+		boolean hasDownDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean adxTrendFalling = adxTrendFalling(adxSubset, -1);
+
+		int satisfied = 0;
+		if (hasAdxBelowTH) {
+			satisfied++;
+		}
+		if (avgBelowTH) {
+			satisfied++;
+		}
+		if (hasDownDirection) {
+			satisfied++;
+		}
+		if (adxTrendFalling) {
+			satisfied++;
+		}
+		return satisfied >= 2;
+	}
+
+	/**
+	 * 判断adx是否快速下降中
+	 * 
+	 * @param adx
+	 * @param coeffTH
+	 * @return
+	 */
+	public boolean adxTrendFalling(double[] adx, double coeffTH) {
+		double max = adx[0];
+		for (double adxValue : adx) {
+			max = Math.max(max, adxValue);
+		}
+
+		// normalize
+		WeightedObservedPoints points = new WeightedObservedPoints();
+		for (int i = 0; i < adx.length; i++) {
+			points.add(i, adx[i] - max);
+		}
+
+		// 1阶拟合
+		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+		return fitter.fit(points.toList())[1] <= coeffTH;
+	}
 }
