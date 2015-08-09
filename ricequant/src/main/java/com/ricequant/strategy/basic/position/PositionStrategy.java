@@ -76,7 +76,7 @@ public class PositionStrategy {
 			unclosedPositionInitValue = 0;
 			currentUnclosedProfitHeld = 0;
 			highestUnclosedProfitHeld = 0;
-		} else {
+		} else if (nonClosed > 0) {
 			// 平掉多头寸
 			trans.sell(stockCode).shares(nonClosed).commit();
 			unclosedPositionInitValue = 0;

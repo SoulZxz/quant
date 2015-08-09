@@ -43,4 +43,37 @@ public class VolatilityComputer {
 		return Math.max(max12, m3);
 	}
 
+	/**
+	 * 计算closing价格变动百分比
+	 * 
+	 * @param close
+	 * @return
+	 */
+	public static double computeClosingChangeSTD(double[] close) {
+		SummaryStatistics stats = new SummaryStatistics();
+		for (int i = 0; i < close.length; i++) {
+			stats.addValue(close[i]);
+		}
+
+		return stats.getStandardDeviation();
+	}
+
+	public double[] computeVolatilityArray(double[] input, int lookbackPeriod) {
+		SummaryStatistics stats = new SummaryStatistics();
+		for (int i = 0; i < input.length; i++) {
+			stats.addValue(input[i]);
+		}
+
+		double mean = stats.getMean();
+		double std = stats.getStandardDeviation();
+
+		double[] result = new double[lookbackPeriod];
+
+		for (int i = 0; i < lookbackPeriod; i++) {
+			double volatility = (input[input.length - lookbackPeriod + i] - mean) / std;
+			result[i] = volatility;
+		}
+
+		return result;
+	}
 }

@@ -83,10 +83,7 @@ public class ADXComputer {
 		boolean adxTrendBoosting = adxTrendBoosting(adxSubset, 1);
 
 		int satisfied = 0;
-		if (hasAdxOverTH) {
-			satisfied++;
-		}
-		if (avgOverTH) {
+		if (hasAdxOverTH || avgOverTH) {
 			satisfied++;
 		}
 		if (hasUpDirection) {
@@ -159,10 +156,7 @@ public class ADXComputer {
 		boolean adxTrendFalling = adxTrendFalling(adxSubset, -1);
 
 		int satisfied = 0;
-		if (hasAdxBelowTH) {
-			satisfied++;
-		}
-		if (avgBelowTH) {
+		if (hasAdxBelowTH || avgBelowTH) {
 			satisfied++;
 		}
 		if (hasDownDirection) {

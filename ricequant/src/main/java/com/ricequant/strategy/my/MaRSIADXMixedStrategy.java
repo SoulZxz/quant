@@ -4,11 +4,13 @@ import java.util.Arrays;
 
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHInfoPacks;
 import com.ricequant.strategy.def.IHInformer;
 import com.ricequant.strategy.def.IHInitializers;
+import com.ricequant.strategy.def.IHPortfolio;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
 import com.ricequant.strategy.def.IHStrategy;
@@ -16,6 +18,13 @@ import com.ricequant.strategy.def.IHTransactionFactory;
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 
+/**
+ * 短线参数 rsiPeriod = 10, adxPeriod = 10, shortPeriod = 5, longPeriod = 10,
+ * maRecentPeriod = 1
+ *
+ * 中线 rsiPeriod = 14, adxPeriod = 14, shortPeriod = 14, longPeriod = 40,
+ * maRecentPeriod = 5
+ */
 public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	public static final int MA_TYPE_SMA = 1;
@@ -61,6 +70,21 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private int maRecentPeriod = 5;
 
+	/** exit **/
+	private double closingChangeSTD;
+
+	private double closingChangeMean;
+
+	private double highestUnclosedProfitHeld;
+
+	private double currentUnclosedProfitHeld;
+
+	private double unclosedPositionInitValue;
+
+	private double profitTarget = 0.05;
+
+	private double lossTrigger = -0.05;
+
 	/** other **/
 	private String stockCode = "000528.XSHE";
 
@@ -92,21 +116,38 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 				history.getLowPrice(), adxPeriod);
 		double currentAdx = adx[adx.length - 1];
 
+		computeClosingChangeSTD(stat.history(longPeriod, HPeriod.Day).getClosingPrice());
+		theInformer.info("closingChangeSTD " + closingChangeSTD + " closingChangeMean "
+				+ closingChangeMean);
+		
+		computeVolumeChangeSTD(stat.history(longPeriod, HPeriod.Day).getTurnoverVolume());
+
 		double rsiSignal = generateRSISignal(stat);
 
 		if (rsiSignal != 0) {
 			int direction = rsiSignal > 0 ? 1 : -1;
 			theInformer.info("rsi trade " + direction + " adx " + currentAdx);
 			boolean confirmedNoTrend = currentAdx < adxTrendingGrayTH;
-			boolean trendForming = currentAdx > adxTrendingGrayTH
-					&& currentAdx < adxTrendingTH
-					&& adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
-							adxTrendFormingLookbackPeriod);
-			boolean trendWaning = currentAdx > adxTrendingTH
-					&& adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
-							adxTrendFormingLookbackPeriod);
-			if (!filterEnabled || confirmedNoTrend || !trendForming || trendWaning) {
-				this.entry(trans, info, stockCode, direction);
+			Boolean trendForming = null;
+			if (currentAdx > adxTrendingGrayTH && currentAdx < adxTrendingTH) {
+				trendForming = adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
+						adxTrendFormingLookbackPeriod);
+			}
+
+			Boolean trendWaning = null;
+			if (currentAdx >= adxTrendingTH) {
+				trendWaning = adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
+						adxTrendFormingLookbackPeriod);
+			}
+
+			if (!filterEnabled || confirmedNoTrend || Boolean.FALSE.equals(trendForming)
+					|| Boolean.TRUE.equals(trendWaning)) {
+				this.entry(trans, info, stat, stockCode, direction);
+			}
+
+			if (!filterEnabled || Boolean.TRUE.equals(trendForming)
+					|| Boolean.FALSE.equals(trendWaning)) {
+				this.entry(trans, info, stat, stockCode, -direction);
 			}
 		}
 
@@ -114,16 +155,30 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		if (maSignal != 0) {
 			int direction = maSignal > 0 ? 1 : -1;
 			theInformer.info("ma trade " + direction + " adx " + currentAdx);
-			boolean trendForming = currentAdx > adxTrendingGrayTH
-					&& currentAdx < adxTrendingTH
-					&& adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
-							adxTrendFormingLookbackPeriod);
-			boolean trendWaning = currentAdx >= adxTrendingTH
-					&& adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
-							adxTrendFormingLookbackPeriod);
-			if (!filterEnabled || trendForming || !trendWaning) {
-				this.entry(trans, info, stockCode, direction);
+
+			Boolean trendForming = null;
+			if (currentAdx > adxTrendingGrayTH && currentAdx < adxTrendingTH) {
+				trendForming = adxTrendForming(adx, adxTrendingGrayTH, adxTrendingTH,
+						adxTrendFormingLookbackPeriod);
 			}
+
+			Boolean trendWaning = null;
+			if (currentAdx >= adxTrendingTH) {
+				trendWaning = adxTrendWaning(adx, adxTrendingGrayTH, adxTrendingTH,
+						adxTrendFormingLookbackPeriod);
+			}
+
+			if (!filterEnabled || Boolean.TRUE.equals(trendForming)
+					|| Boolean.FALSE.equals(trendWaning)) {
+				this.entry(trans, info, stat, stockCode, direction);
+			}
+		}
+
+		double exitSignal = this.generateExitSignal(stat, info.portfolio());
+		// 出现止损信号
+		if (exitSignal < 0) {
+			theInformer.info("exitSignal " + exitSignal + " adx " + currentAdx);
+			this.exit(trans, info, stockCode);
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());
@@ -185,6 +240,29 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		// 什么也不做
 		else {
 			return 0;
+		}
+	}
+
+	public double generateExitSignal(IHStatistics stat, IHPortfolio portfolio) {
+		if (unclosedPositionInitValue == 0) {
+			return 0;
+		}
+
+		currentUnclosedProfitHeld = currentUnclosedProfitHeld + portfolio.getProfitAndLoss();
+		highestUnclosedProfitHeld = Math.max(highestUnclosedProfitHeld, currentUnclosedProfitHeld);
+
+		double profitAndLossRate = currentUnclosedProfitHeld / unclosedPositionInitValue;
+		double highestProfitRate = highestUnclosedProfitHeld / unclosedPositionInitValue;
+
+		// 达到盈利点, 发止盈信号; 从最高盈利点发生drawdown达到lossTrigger, 止损或止浮盈
+		if (profitAndLossRate - highestProfitRate >= lossTrigger) {
+			return 0;
+		} else {
+			if (profitAndLossRate - highestProfitRate < lossTrigger) {
+				return -1;
+			} else {
+				return 0;
+			}
 		}
 	}
 
@@ -266,10 +344,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		theInformer.info("adxTrendBoosting " + adxTrendBoosting);
 
 		int satisfied = 0;
-		if (hasAdxOverTH) {
-			satisfied++;
-		}
-		if (avgOverTH) {
+		if (hasAdxOverTH || avgOverTH) {
 			satisfied++;
 		}
 		if (hasUpDirection) {
@@ -329,10 +404,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		theInformer.info("adxTrendFalling " + adxTrendFalling);
 
 		int satisfied = 0;
-		if (hasAdxBelowTH) {
-			satisfied++;
-		}
-		if (avgBelowTH) {
+		if (hasAdxBelowTH || avgBelowTH) {
 			satisfied++;
 		}
 		if (hasDownDirection) {
@@ -366,7 +438,8 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		return out;
 	}
 
-	public void entry(IHTransactionFactory trans, IHInfoPacks info, String stockCode, int direction) {
+	public void entry(IHTransactionFactory trans, IHInfoPacks info, IHStatistics stat,
+			String stockCode, int direction) {
 		int nonClosed = (int) info.position(stockCode).getNonClosedTradeQuantity();
 		int directionalNonClosed = direction * nonClosed;
 
@@ -377,12 +450,20 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 				trans.buy(stockCode).shares(-nonClosed).commit();
 				// 开多头寸
 				trans.buy(stockCode).percent(100).commit();
+				unclosedPositionInitValue = info.position(stockCode).getNonClosedTradeQuantity()
+						* stat.getLastPrice();
+				currentUnclosedProfitHeld = 0;
+				highestUnclosedProfitHeld = 0;
 			} else {
 				// 平掉多头寸
 				trans.sell(stockCode).shares(nonClosed).commit();
 				// 开空头寸
 				if (allowShortSell) {
 					trans.sell(stockCode).percent(100).commit();
+					unclosedPositionInitValue = -info.position(stockCode)
+							.getNonClosedTradeQuantity() * stat.getLastPrice();
+					currentUnclosedProfitHeld = 0;
+					highestUnclosedProfitHeld = 0;
 				}
 			}
 		}
@@ -391,12 +472,57 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 			if (direction > 0) {
 				// 开多头寸
 				trans.buy(stockCode).percent(100).commit();
+				unclosedPositionInitValue = info.position(stockCode).getNonClosedTradeQuantity()
+						* stat.getLastPrice();
+				currentUnclosedProfitHeld = 0;
+				highestUnclosedProfitHeld = 0;
 			} else if (direction < 0) {
 				// 开空头寸
 				if (allowShortSell) {
 					trans.sell(stockCode).percent(100).commit();
+					unclosedPositionInitValue = -info.position(stockCode)
+							.getNonClosedTradeQuantity() * stat.getLastPrice();
+					currentUnclosedProfitHeld = 0;
+					highestUnclosedProfitHeld = 0;
 				}
 			}
 		}
+	}
+
+	public void exit(IHTransactionFactory trans, IHInfoPacks info, String stockCode) {
+		int nonClosed = (int) info.position(stockCode).getNonClosedTradeQuantity();
+		if (nonClosed < 0) {
+			// 平掉空头寸
+			trans.buy(stockCode).shares(-nonClosed).commit();
+			unclosedPositionInitValue = 0;
+			currentUnclosedProfitHeld = 0;
+			highestUnclosedProfitHeld = 0;
+		} else if (nonClosed > 0) {
+			// 平掉多头寸
+			trans.sell(stockCode).shares(nonClosed).commit();
+			unclosedPositionInitValue = 0;
+			currentUnclosedProfitHeld = 0;
+			highestUnclosedProfitHeld = 0;
+		}
+	}
+
+	public void computeClosingChangeSTD(double[] close) {
+		SummaryStatistics stats = new SummaryStatistics();
+		for (int i = 0; i < close.length - 1; i++) {
+			stats.addValue((close[i + 1] - close[i]) / close[i]);
+		}
+
+		closingChangeMean = stats.getMean();
+		closingChangeSTD = stats.getStandardDeviation();
+	}
+
+	public void computeVolumeChangeSTD(double[] volumn) {
+		SummaryStatistics stats = new SummaryStatistics();
+		for (int i = 0; i < volumn.length - 1; i++) {
+			stats.addValue(volumn[i]);
+		}
+
+		double value = (volumn[volumn.length - 1] - stats.getMean()) / stats.getStandardDeviation();
+		theInformer.info("volumn " + volumn[volumn.length - 1] + " var " + value);
 	}
 }

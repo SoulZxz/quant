@@ -24,6 +24,10 @@ public class ProfitExitSignalGenerator implements ExitSignalGenerator {
 
 	@Override
 	public double generateSignal(IHStatistics stat, IHPortfolio portfolio) {
+		if (unclosedPositionInitValue == 0) {
+			return 0;
+		}
+
 		currentUnclosedProfitHeld = currentUnclosedProfitHeld + portfolio.getProfitAndLoss();
 		highestUnclosedProfitHeld = Math.max(highestUnclosedProfitHeld, currentUnclosedProfitHeld);
 
