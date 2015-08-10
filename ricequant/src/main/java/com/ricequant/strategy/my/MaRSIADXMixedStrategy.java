@@ -2,6 +2,8 @@ package com.ricequant.strategy.my;
 
 import java.util.Arrays;
 
+import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
+import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -70,6 +72,13 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private int maRecentPeriod = 5;
 
+	/** volatility **/
+	private int volumeVolatitilyPeriod = 40;
+
+	private double volatilityTH = 1;
+
+	private int volumeVolatitilyLookbackPeriod = 5;
+
 	/** exit **/
 	private double closingChangeSTD;
 
@@ -80,8 +89,6 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 	private double currentUnclosedProfitHeld;
 
 	private double unclosedPositionInitValue;
-
-	private double profitTarget = 0.05;
 
 	private double lossTrigger = -0.05;
 
@@ -119,8 +126,6 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		computeClosingChangeSTD(stat.history(longPeriod, HPeriod.Day).getClosingPrice());
 		theInformer.info("closingChangeSTD " + closingChangeSTD + " closingChangeMean "
 				+ closingChangeMean);
-		
-		computeVolumeChangeSTD(stat.history(longPeriod, HPeriod.Day).getTurnoverVolume());
 
 		double rsiSignal = generateRSISignal(stat);
 
@@ -178,7 +183,9 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		// 出现止损信号
 		if (exitSignal < 0) {
 			theInformer.info("exitSignal " + exitSignal + " adx " + currentAdx);
-			this.exit(trans, info, stockCode);
+			if (hasVolumeVolatilityDisturbance(stat, info)) {
+				this.exit(trans, info, stockCode);
+			}
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());
@@ -285,20 +292,14 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 	}
 
 	public boolean adxTrendBoosting(double[] adx, double coeffTH) {
-		double min = adx[0];
-		for (double adxValue : adx) {
-			min = Math.min(min, adxValue);
-		}
+		double[] normalized = normalize(adx);
 
-		// normalize
-		WeightedObservedPoints points = new WeightedObservedPoints();
-		for (int i = 0; i < adx.length; i++) {
-			points.add(i, adx[i] - min);
-		}
+		double[] coeffs = linearFitting(normalized);
+		boolean constantSpeed = coeffs[1] >= coeffTH;
 
-		// 1阶拟合
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-		return fitter.fit(points.toList())[1] >= coeffTH;
+		boolean upSpeed = linearFitting(splineDerivatives(normalized))[1] > 0;
+
+		return constantSpeed || upSpeed;
 	}
 
 	/**
@@ -516,13 +517,114 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		closingChangeSTD = stats.getStandardDeviation();
 	}
 
-	public void computeVolumeChangeSTD(double[] volumn) {
-		SummaryStatistics stats = new SummaryStatistics();
-		for (int i = 0; i < volumn.length - 1; i++) {
-			stats.addValue(volumn[i]);
+	public boolean hasVolumeVolatilityDisturbance(IHStatistics stat, IHInfoPacks info) {
+		IHStatisticsHistory history = stat.history(volumeVolatitilyPeriod, HPeriod.Day);
+		double[] result = this.computeVolatilityArray(history.getTurnoverVolume(),
+				volumeVolatitilyLookbackPeriod);
+
+		double maxVolatility = 0;
+		int maxVolatilityPosition = -1;
+		for (int i = 0; i < result.length; i++) {
+			double value = result[i];
+			if (value >= volatilityTH) {
+				maxVolatility = Math.max(maxVolatility, value);
+				maxVolatilityPosition = i;
+			}
 		}
 
-		double value = (volumn[volumn.length - 1] - stats.getMean()) / stats.getStandardDeviation();
-		theInformer.info("volumn " + volumn[volumn.length - 1] + " var " + value);
+		boolean hasVolatilityTideFall = false;
+		if (maxVolatilityPosition != -1) {
+			hasVolatilityTideFall = true;
+			theInformer.info("volumn volatility " + Arrays.toString(result)
+					+ " hasVolatilityTideFall " + hasVolatilityTideFall);
+		}
+		return hasVolatilityTideFall;
+	}
+
+	public double[] computeVolatilityArray(double[] input, int lookbackPeriod) {
+		SummaryStatistics stats = new SummaryStatistics();
+		for (int i = 0; i < input.length; i++) {
+			stats.addValue(input[i]);
+		}
+
+		double mean = stats.getMean();
+		double std = stats.getStandardDeviation();
+
+		double[] result = new double[lookbackPeriod];
+
+		for (int i = 0; i < lookbackPeriod; i++) {
+			double volatility = (input[input.length - lookbackPeriod + i] - mean) / std;
+			result[i] = volatility;
+		}
+
+		return result;
+	}
+
+	public double[] normalize(double[] input) {
+		// 正则化到0-1之间
+		double yMin = input[0];
+		double yMax = input[0];
+
+		for (double value : input) {
+			yMin = Math.min(yMin, value);
+			yMax = Math.max(yMax, value);
+		}
+
+		double[] normalized = new double[input.length];
+		for (int i = 0; i < input.length; i++) {
+			normalized[i] = (input[i] - yMin) / (yMax - yMin);
+		}
+
+		return normalized;
+	}
+
+	/**
+	 * 1阶线性拟合
+	 *
+	 * @param input
+	 *            正则化过的数组
+	 * @return 拟合系数数组
+	 */
+	public double[] linearFitting(double[] input) {
+		double xStep = 1.0 / (input.length - 1);
+
+		// normalize
+		WeightedObservedPoints points = new WeightedObservedPoints();
+		for (int i = 0; i < input.length; i++) {
+			points.add(i * xStep, input[i]);
+		}
+
+		// 1阶拟合, 判断是否以大于coeffTH的斜率匀速上升
+		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
+		return fitter.fit(points.toList());
+	}
+
+	/**
+	 * 计算分段插值拟合的导数值
+	 *
+	 * @param input
+	 *            正则化过的数组
+	 * @return
+	 */
+	public double[] splineDerivatives(double[] input) {
+		double xStep = 1.0 / (input.length - 1);
+
+		double[] x = new double[input.length];
+		double[] y = new double[input.length];
+
+		for (int i = 0; i < input.length; i++) {
+			x[i] = i * xStep;
+			y[i] = input[i];
+		}
+
+		SplineInterpolator fitter = new SplineInterpolator();
+		PolynomialSplineFunction func = fitter.interpolate(x, y);
+
+		double[] derivatives = new double[input.length];
+		for (int i = 0; i < derivatives.length; i++) {
+			derivatives[i] = func.derivative().value(x[i]);
+		}
+
+		return derivatives;
 	}
 }

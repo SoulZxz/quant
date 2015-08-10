@@ -1,5 +1,9 @@
 package com.ricequant.strategy.basic.di.adx;
 
+import static com.ricequant.strategy.basic.utils.FittingComputer.linearFitting;
+import static com.ricequant.strategy.basic.utils.FittingComputer.normalize;
+import static com.ricequant.strategy.basic.utils.FittingComputer.splineDerivatives;
+
 import java.util.Arrays;
 
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
@@ -103,20 +107,14 @@ public class ADXComputer {
 	 * @return
 	 */
 	public boolean adxTrendBoosting(double[] adx, double coeffTH) {
-		double min = adx[0];
-		for (double adxValue : adx) {
-			min = Math.min(min, adxValue);
-		}
+		double[] normalized = normalize(adx);
 
-		// normalize
-		WeightedObservedPoints points = new WeightedObservedPoints();
-		for (int i = 0; i < adx.length; i++) {
-			points.add(i, adx[i] - min);
-		}
+		double[] coeffs = linearFitting(normalized);
+		boolean constantSpeed = coeffs[1] >= coeffTH;
 
-		// 1阶拟合
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-		return fitter.fit(points.toList())[1] >= coeffTH;
+		boolean upSpeed = linearFitting(splineDerivatives(normalized))[1] > 0;
+
+		return constantSpeed || upSpeed;
 	}
 
 	/**
@@ -187,7 +185,7 @@ public class ADXComputer {
 			points.add(i, adx[i] - max);
 		}
 
-		// 1阶拟合
+		// 1阶拟合, 判断是否以小于coeffTH的斜率匀速下降
 		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
 		return fitter.fit(points.toList())[1] <= coeffTH;
 	}

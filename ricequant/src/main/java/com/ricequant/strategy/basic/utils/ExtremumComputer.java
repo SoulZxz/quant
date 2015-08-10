@@ -1,9 +1,9 @@
 package com.ricequant.strategy.basic.utils;
 
+import static com.ricequant.strategy.basic.utils.FittingComputer.splineDerivatives;
+
 import java.util.Arrays;
 
-import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
-import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
 import org.apache.commons.math3.fitting.WeightedObservedPoints;
 
@@ -55,7 +55,7 @@ public class ExtremumComputer {
 			// 以中心点分割，分两段做1阶线性拟合, 两段斜率符号要相反
 			if (this.isLinearCoeffDiff(normalizedSamplePoints, centerIndex)) {
 				// 插值拟合导数校验
-				double[] derivatives = this.splineDerivatives(normalizedSamplePoints);
+				double[] derivatives = splineDerivatives(normalizedSamplePoints);
 
 				double firstHalfCoeff = derivatives[centerIndex - 1];
 				double secondHalfCoeff = derivatives[centerIndex + 1];
@@ -112,34 +112,6 @@ public class ExtremumComputer {
 		double secondHalfCoeff = secondHalfCoeffs[1];
 
 		return firstHalfCoeff * secondHalfCoeff < 0;
-	}
-
-	/**
-	 * 计算分段插值拟合的导数值
-	 *
-	 * @param input
-	 * @return
-	 */
-	private double[] splineDerivatives(double[] input) {
-		double xStep = 1.0 / input.length;
-
-		double[] x = new double[input.length];
-		double[] y = new double[input.length];
-
-		for (int i = 0; i < input.length; i++) {
-			x[i] = i * xStep;
-			y[i] = input[i];
-		}
-
-		SplineInterpolator fitter = new SplineInterpolator();
-		PolynomialSplineFunction func = fitter.interpolate(x, y);
-
-		double[] derivatives = new double[input.length];
-		for (int i = 0; i < derivatives.length; i++) {
-			derivatives[i] = func.derivative().value(x[i]);
-		}
-
-		return derivatives;
 	}
 
 }
