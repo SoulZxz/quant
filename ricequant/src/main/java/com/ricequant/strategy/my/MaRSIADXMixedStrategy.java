@@ -77,7 +77,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private double volatilityTH = 1;
 
-	private int volumeVolatitilyLookbackPeriod = 5;
+	private int volumeVolatitilyLookbackPeriod = 10;
 
 	/** exit **/
 	private double closingChangeSTD;
@@ -90,7 +90,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 	private double unclosedPositionInitValue;
 
-	private double lossTrigger = -0.05;
+	private double lossTrigger = -0.10;
 
 	/** other **/
 	private String stockCode = "000528.XSHE";
@@ -127,8 +127,11 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		theInformer.info("closingChangeSTD " + closingChangeSTD + " closingChangeMean "
 				+ closingChangeMean);
 
-		double rsiSignal = generateRSISignal(stat);
+		int rsiDecisionDirection = 0;
+		int maDecisionDirection = 0;
+		int exitDecisionDirection = 0;
 
+		double rsiSignal = generateRSISignal(stat);
 		if (rsiSignal != 0) {
 			int direction = rsiSignal > 0 ? 1 : -1;
 			theInformer.info("rsi trade " + direction + " adx " + currentAdx);
@@ -147,12 +150,12 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 			if (!filterEnabled || confirmedNoTrend || Boolean.FALSE.equals(trendForming)
 					|| Boolean.TRUE.equals(trendWaning)) {
-				this.entry(trans, info, stat, stockCode, direction);
+				rsiDecisionDirection = direction;
 			}
 
 			if (!filterEnabled || Boolean.TRUE.equals(trendForming)
 					|| Boolean.FALSE.equals(trendWaning)) {
-				this.entry(trans, info, stat, stockCode, -direction);
+				rsiDecisionDirection = -direction;
 			}
 		}
 
@@ -175,7 +178,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 
 			if (!filterEnabled || Boolean.TRUE.equals(trendForming)
 					|| Boolean.FALSE.equals(trendWaning)) {
-				this.entry(trans, info, stat, stockCode, direction);
+				maDecisionDirection = direction;
 			}
 		}
 
@@ -184,8 +187,16 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		if (exitSignal < 0) {
 			theInformer.info("exitSignal " + exitSignal + " adx " + currentAdx);
 			if (hasVolumeVolatilityDisturbance(stat, info)) {
-				this.exit(trans, info, stockCode);
+				exitDecisionDirection = -1;
 			}
+		}
+
+		int entryDecisionDirection = rsiDecisionDirection + maDecisionDirection;
+
+		if (Math.abs(entryDecisionDirection) >= Math.abs(exitDecisionDirection)) {
+			this.entry(trans, info, stat, stockCode, entryDecisionDirection);
+		} else {
+			this.exit(trans, info, stockCode);
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());
@@ -297,7 +308,8 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 		double[] coeffs = linearFitting(normalized);
 		boolean constantSpeed = coeffs[1] >= coeffTH;
 
-		boolean upSpeed = linearFitting(splineDerivatives(normalized))[1] > 0;
+		boolean upSpeed = coeffs[1] > coeffTH / 2
+				&& linearFitting(splineDerivatives(normalized))[1] > 0;
 
 		return constantSpeed || upSpeed;
 	}
@@ -335,7 +347,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 			}
 		}
 		boolean avgOverTH = adxSum / lookbackPeriod >= trendingGrayTH;
-		boolean hasUpDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean hasUpDirection = directionIndex / (lookbackPeriod - 1) >= directionTH;
 		boolean adxTrendBoosting = adxTrendBoosting(adxSubset, 1);
 
 		theInformer.info("test trend forming " + Arrays.toString(adxSubset));
@@ -358,20 +370,15 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 	}
 
 	public boolean adxTrendFalling(double[] adx, double coeffTH) {
-		double max = adx[0];
-		for (double adxValue : adx) {
-			max = Math.max(max, adxValue);
-		}
+		double[] normalized = normalize(adx);
 
-		// normalize
-		WeightedObservedPoints points = new WeightedObservedPoints();
-		for (int i = 0; i < adx.length; i++) {
-			points.add(i, adx[i] - max);
-		}
+		double[] coeffs = linearFitting(normalized);
+		boolean constantSpeed = coeffs[1] <= coeffTH;
 
-		// 1阶拟合
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-		return fitter.fit(points.toList())[1] <= coeffTH;
+		boolean upSpeed = coeffs[1] < coeffTH / 2
+				&& linearFitting(splineDerivatives(normalized))[1] < 0;
+
+		return constantSpeed || upSpeed;
 	}
 
 	public boolean adxTrendWaning(double[] adx, double trendingGrayTH, double trendingTH,
@@ -395,7 +402,7 @@ public class MaRSIADXMixedStrategy implements IHStrategy {
 			}
 		}
 		boolean avgBelowTH = adxSum / lookbackPeriod <= trendingTH;
-		boolean hasDownDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean hasDownDirection = directionIndex / (lookbackPeriod - 1) >= directionTH;
 		boolean adxTrendFalling = adxTrendFalling(adxSubset, -1);
 
 		theInformer.info("test trend waning " + Arrays.toString(adxSubset));

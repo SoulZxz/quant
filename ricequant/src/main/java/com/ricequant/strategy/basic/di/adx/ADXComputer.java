@@ -6,9 +6,6 @@ import static com.ricequant.strategy.basic.utils.FittingComputer.splineDerivativ
 
 import java.util.Arrays;
 
-import org.apache.commons.math3.fitting.PolynomialCurveFitter;
-import org.apache.commons.math3.fitting.WeightedObservedPoints;
-
 import com.tictactec.ta.lib.Core;
 import com.tictactec.ta.lib.MInteger;
 
@@ -83,7 +80,7 @@ public class ADXComputer {
 			}
 		}
 		boolean avgOverTH = adxSum / lookbackPeriod >= trendingGrayTH;
-		boolean hasUpDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean hasUpDirection = directionIndex / (lookbackPeriod - 1) >= directionTH;
 		boolean adxTrendBoosting = adxTrendBoosting(adxSubset, 1);
 
 		int satisfied = 0;
@@ -112,7 +109,8 @@ public class ADXComputer {
 		double[] coeffs = linearFitting(normalized);
 		boolean constantSpeed = coeffs[1] >= coeffTH;
 
-		boolean upSpeed = linearFitting(splineDerivatives(normalized))[1] > 0;
+		boolean upSpeed = coeffs[1] > coeffTH / 2
+				&& linearFitting(splineDerivatives(normalized))[1] > 0;
 
 		return constantSpeed || upSpeed;
 	}
@@ -150,7 +148,7 @@ public class ADXComputer {
 			}
 		}
 		boolean avgBelowTH = adxSum / lookbackPeriod <= trendingTH;
-		boolean hasDownDirection = directionIndex / lookbackPeriod > directionTH;
+		boolean hasDownDirection = directionIndex / (lookbackPeriod - 1) >= directionTH;
 		boolean adxTrendFalling = adxTrendFalling(adxSubset, -1);
 
 		int satisfied = 0;
@@ -174,19 +172,14 @@ public class ADXComputer {
 	 * @return
 	 */
 	public boolean adxTrendFalling(double[] adx, double coeffTH) {
-		double max = adx[0];
-		for (double adxValue : adx) {
-			max = Math.max(max, adxValue);
-		}
+		double[] normalized = normalize(adx);
 
-		// normalize
-		WeightedObservedPoints points = new WeightedObservedPoints();
-		for (int i = 0; i < adx.length; i++) {
-			points.add(i, adx[i] - max);
-		}
+		double[] coeffs = linearFitting(normalized);
+		boolean constantSpeed = coeffs[1] <= coeffTH;
 
-		// 1阶拟合, 判断是否以小于coeffTH的斜率匀速下降
-		PolynomialCurveFitter fitter = PolynomialCurveFitter.create(1);
-		return fitter.fit(points.toList())[1] <= coeffTH;
+		boolean upSpeed = coeffs[1] < coeffTH / 2
+				&& linearFitting(splineDerivatives(normalized))[1] < 0;
+
+		return constantSpeed || upSpeed;
 	}
 }
