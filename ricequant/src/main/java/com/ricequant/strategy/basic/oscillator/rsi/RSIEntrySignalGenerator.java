@@ -1,17 +1,15 @@
 package com.ricequant.strategy.basic.oscillator.rsi;
 
+import static com.ricequant.strategy.basic.oscillator.rsi.RSIComputer.computeRSI;
+
 import com.ricequant.strategy.basic.EntrySignalGenerator;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatistics;
-import com.tictactec.ta.lib.Core;
-import com.tictactec.ta.lib.MInteger;
 
 /**
  * RSI
  */
 public class RSIEntrySignalGenerator implements EntrySignalGenerator {
-
-	private Core core = new Core();
 
 	private double lowRSI;
 
@@ -27,8 +25,7 @@ public class RSIEntrySignalGenerator implements EntrySignalGenerator {
 
 	}
 
-	public RSIEntrySignalGenerator(double lowRSI, double highRSI,
-			int dataSetSize, int period) {
+	public RSIEntrySignalGenerator(double lowRSI, double highRSI, int dataSetSize, int period) {
 		super();
 		this.lowRSI = lowRSI;
 		this.highRSI = highRSI;
@@ -38,8 +35,7 @@ public class RSIEntrySignalGenerator implements EntrySignalGenerator {
 
 	@Override
 	public double generateSignal(IHStatistics stat) {
-		double[] close = stat.history(dataSetSize, HPeriod.Day)
-				.getClosingPrice();
+		double[] close = stat.history(dataSetSize, HPeriod.Day).getClosingPrice();
 
 		double[] result = computeRSI(close, period);
 
@@ -54,21 +50,4 @@ public class RSIEntrySignalGenerator implements EntrySignalGenerator {
 		}
 	}
 
-	/**
-	 * rsi计算结果与input数据量大小有很大关系， input越大计算结果越有参考意义，rsi才是平滑曲线
-	 *
-	 * @param input
-	 *            一般是250个元素
-	 * @param period
-	 *            建议14
-	 * @return
-	 */
-	public double[] computeRSI(double[] input, int period) {
-		MInteger begin = new MInteger();
-		MInteger length = new MInteger();
-		double[] out = new double[input.length - period];
-
-		core.rsi(0, input.length - 1, input, period, begin, length, out);
-		return out;
-	}
 }

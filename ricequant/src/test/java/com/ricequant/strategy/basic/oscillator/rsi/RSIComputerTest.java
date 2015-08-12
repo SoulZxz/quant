@@ -1,5 +1,6 @@
 package com.ricequant.strategy.basic.oscillator.rsi;
 
+import static com.ricequant.strategy.basic.oscillator.rsi.RSIComputer.computeRSI;
 import static org.testng.AssertJUnit.assertEquals;
 
 import org.testng.annotations.Test;
@@ -23,8 +24,7 @@ public class RSIComputerTest extends BaseTest {
 				31.858200680368498, 35.35636093629221, 33.739752740220865, 29.397164967886173,
 				22.15351750138033, 21.715079513086483, 24.915665493974913, 23.510817417158357 };
 
-		RSIEntrySignalGenerator computer = new RSIEntrySignalGenerator();
-		double[] result = computer.computeRSI(close, 14);
+		double[] result = computeRSI(close, 14);
 
 		assertEquals(expectedLength, result.length);
 		this.assertArrayEquals(expectedValues, result);
