@@ -38,7 +38,7 @@ public class BehaviorComputer {
 			}
 		}
 
-		int[] result = new int[2];
+		int[] result = new int[3];
 		result[0] = crossUp;
 		result[1] = crossDown;
 		result[2] = whichCrossFirst;

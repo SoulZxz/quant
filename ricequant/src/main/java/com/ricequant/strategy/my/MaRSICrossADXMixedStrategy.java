@@ -1,7 +1,5 @@
 package com.ricequant.strategy.my;
 
-import static com.ricequant.strategy.basic.utils.BehaviorComputer.simpleCross;
-
 import java.util.Arrays;
 
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
@@ -48,7 +46,7 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 	private int crossLookBackPeriod = 5;
 
 	private int decisionDelay = 0;
-	
+
 	/** adx **/
 	private int adxSmoothingPeriod = 150;
 
@@ -152,10 +150,10 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 				rsiDecisionDirection = direction;
 			}
 
-//			if (!filterEnabled || Boolean.TRUE.equals(trendForming)
-//					|| Boolean.FALSE.equals(trendWaning)) {
-//				rsiDecisionDirection = -direction;
-//			}
+			// if (!filterEnabled || Boolean.TRUE.equals(trendForming)
+			// || Boolean.FALSE.equals(trendWaning)) {
+			// rsiDecisionDirection = -direction;
+			// }
 		}
 
 		double maSignal = this.generateMASignal(stat);
@@ -594,6 +592,39 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 			result[i] = volatility;
 		}
 
+		return result;
+	}
+
+	public int[] simpleCross(double[] input, double targetValue, int decisionDelay) {
+		int crossUp = 0;
+		int crossDown = 0;
+		int whichCrossFirst = 0;
+
+		double lastValue = input[0];
+		for (int i = 0; i < input.length; i++) {
+			double currentValue = input[i];
+
+			boolean canChangeValue = i <= input.length - 1 - decisionDelay;
+
+			if (lastValue < targetValue && currentValue > targetValue && canChangeValue) {
+				crossUp++;
+				if (whichCrossFirst == 0) {
+					whichCrossFirst = 1;
+				}
+			}
+
+			if (lastValue > targetValue && currentValue < targetValue && canChangeValue) {
+				crossDown++;
+				if (whichCrossFirst == 0) {
+					whichCrossFirst = -1;
+				}
+			}
+		}
+
+		int[] result = new int[3];
+		result[0] = crossUp;
+		result[1] = crossDown;
+		result[2] = whichCrossFirst;
 		return result;
 	}
 
