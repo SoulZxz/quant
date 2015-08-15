@@ -1,4 +1,4 @@
-package com.ricequant.strategy.support;
+package com.ricequant.strategy.support.mock;
 
 import java.util.Arrays;
 

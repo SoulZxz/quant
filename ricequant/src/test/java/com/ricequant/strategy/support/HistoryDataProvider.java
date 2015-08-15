@@ -11,6 +11,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 
 import com.ricequant.strategy.def.IHStatisticsHistory;
+import com.ricequant.strategy.support.mock.DummyHistoryData;
 
 public class HistoryDataProvider {
 

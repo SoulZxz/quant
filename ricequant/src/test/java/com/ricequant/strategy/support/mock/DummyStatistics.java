@@ -1,9 +1,10 @@
-package com.ricequant.strategy.support;
+package com.ricequant.strategy.support.mock;
 
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHInstrument;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsHistory;
+import com.ricequant.strategy.support.HistoryDataProvider;
 
 public class DummyStatistics implements IHStatistics {
 

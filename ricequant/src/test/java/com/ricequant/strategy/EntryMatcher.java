@@ -16,8 +16,8 @@ import com.ricequant.strategy.basic.oscillator.rsi.RSIEntrySignalGenerator;
 import com.ricequant.strategy.basic.utils.ExtremumComputer;
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHStatisticsHistory;
-import com.ricequant.strategy.support.DummyStatistics;
 import com.ricequant.strategy.support.FileUtils;
+import com.ricequant.strategy.support.mock.DummyStatistics;
 
 public class EntryMatcher {
 
