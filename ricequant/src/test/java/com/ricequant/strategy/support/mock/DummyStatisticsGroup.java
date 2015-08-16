@@ -9,7 +9,14 @@ import com.ricequant.strategy.def.mock.StatisticsFunction;
 
 public class DummyStatisticsGroup implements IHStatisticsGroup {
 
+	private int startDay;
+
 	private StatisticsFunction statFunc;
+
+	public DummyStatisticsGroup(int startDay) {
+		super();
+		this.startDay = startDay;
+	}
 
 	@Override
 	public Iterator<IHStatistics> iterator() {
@@ -19,8 +26,7 @@ public class DummyStatisticsGroup implements IHStatisticsGroup {
 
 	@Override
 	public IHStatistics get(String idOrSymbol) {
-		// TODO Auto-generated method stub
-		return null;
+		return new DummyStatistics(startDay, idOrSymbol);
 	}
 
 	@Override
