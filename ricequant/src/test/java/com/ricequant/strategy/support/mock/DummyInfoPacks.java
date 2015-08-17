@@ -28,7 +28,7 @@ public class DummyInfoPacks implements IHInfoPacks {
 
 	@Override
 	public IHPosition position(String idOrSymbol) {
-		return PortfolioHolder.getPositions().get(idOrSymbol);
+		return PortfolioHolder.position(idOrSymbol);
 	}
 
 	@Override

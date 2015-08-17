@@ -47,4 +47,10 @@ public class DummyPosition implements IHPosition {
 		this.nonClosedTradeQuantity = nonClosedTradeQuantity;
 	}
 
+	@Override
+	public String toString() {
+		return "DummyPosition [stockCode=" + stockCode + ", nonClosedTradeQuantity="
+				+ nonClosedTradeQuantity + "]";
+	}
+
 }

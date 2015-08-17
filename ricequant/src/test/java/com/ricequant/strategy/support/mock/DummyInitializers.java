@@ -38,8 +38,7 @@ public class DummyInitializers implements IHInitializers {
 
 	@Override
 	public void instruments(PickerFunction pickerFactory) {
-		// TODO Auto-generated method stub
-
+		pickerFactory.pick(new DummyInstrumentsPicker());
 	}
 
 }

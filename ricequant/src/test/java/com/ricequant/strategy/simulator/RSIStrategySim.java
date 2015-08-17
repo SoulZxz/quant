@@ -12,7 +12,7 @@ public class RSIStrategySim {
 	public void testRun() {
 		StrategyRunner runner = new StrategyRunner(new RSIStrategy(), 50, 220);
 		runner.runStrategy();
-		
+
 		PortfolioHolder.status();
 	}
 

@@ -37,8 +37,9 @@ public class DummyStatisticsGroup implements IHStatisticsGroup {
 	@Override
 	public void each(StatisticsFunction stat) {
 		this.statFunc = stat;
-		System.out.println("StatisticsFunction " + stat.getClass());
-		stat.calculate(new DummyStatistics(50, "000528.XSHE"));
+		for (String stockCode : StockPool.getStockCodes()) {
+			stat.calculate(new DummyStatistics(startDay, stockCode));
+		}
 	}
 
 }

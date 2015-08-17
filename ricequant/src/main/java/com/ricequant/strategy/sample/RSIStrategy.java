@@ -52,7 +52,6 @@ public class RSIStrategy implements IHStrategy {
 
 		initializers.events().statistics((stats, info, trans) -> {
 			stats.each((stat) -> {
-				System.out.println("work work");
 				RSIStrategy.this.eaWork(stats.get(stockCode), info, trans);
 			});
 		});

@@ -12,10 +12,13 @@ public class DummyStatistics implements IHStatistics {
 
 	private String stockCode;
 
+	private IHStatisticsHistory current;
+
 	public DummyStatistics(int startDay, String stockCode) {
 		super();
 		this.startDay = startDay;
 		this.stockCode = stockCode;
+		current = HistoryDataProvider.getData("data/pool/" + stockCode, startDay, startDay + 2);
 	}
 
 	@Override
@@ -25,32 +28,32 @@ public class DummyStatistics implements IHStatistics {
 
 	@Override
 	public double getLastPrice() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getOpeningPrice()[1];
 	}
 
 	@Override
 	public double getHighPrice() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getHighPrice()[0];
 	}
 
 	@Override
 	public double getLowPrice() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getLowPrice()[0];
 	}
 
 	@Override
 	public double getOpeningPrice() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getOpeningPrice()[0];
 	}
 
 	@Override
 	public double getClosingPrice() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getClosingPrice()[0];
 	}
 
 	@Override
 	public double getTurnoverVolume() {
-		throw new IllegalArgumentException("unimplemented");
+		return current.getTurnoverVolume()[0];
 	}
 
 	@Override

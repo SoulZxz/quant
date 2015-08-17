@@ -10,7 +10,6 @@ public class DummyEventHandlers implements EventHandlers {
 	@Override
 	public void statistics(IHStatisticsUpdateHandler handler) {
 		this.handler = handler;
-		System.out.println("handler " + handler.getClass());
 	}
 
 	@Override
