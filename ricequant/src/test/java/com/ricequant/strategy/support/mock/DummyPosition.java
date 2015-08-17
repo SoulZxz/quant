@@ -43,4 +43,8 @@ public class DummyPosition implements IHPosition {
 		throw new IllegalArgumentException("unimplemented");
 	}
 
+	public void setNonClosedTradeQuantity(double nonClosedTradeQuantity) {
+		this.nonClosedTradeQuantity = nonClosedTradeQuantity;
+	}
+
 }

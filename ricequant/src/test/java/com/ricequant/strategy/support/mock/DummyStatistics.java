@@ -10,71 +10,62 @@ public class DummyStatistics implements IHStatistics {
 
 	private int startDay;
 
-	private String fileName;
+	private String stockCode;
 
-	public DummyStatistics(int startDay, String fileName) {
+	public DummyStatistics(int startDay, String stockCode) {
 		super();
 		this.startDay = startDay;
-		this.fileName = fileName;
+		this.stockCode = stockCode;
 	}
 
 	@Override
 	public IHInstrument getInstrument() {
-		// TODO Auto-generated method stub
-		return null;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getLastPrice() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getHighPrice() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getLowPrice() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getOpeningPrice() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getClosingPrice() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double getTurnoverVolume() {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double vwap(int numTicks, HPeriod tickPeriod) {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public double mavg(int numTicks, HPeriod tickPeriod) {
-		// TODO Auto-generated method stub
-		return 0;
+		throw new IllegalArgumentException("unimplemented");
 	}
 
 	@Override
 	public IHStatisticsHistory history(int numTicks, HPeriod tickPeriod) {
-		return HistoryDataProvider.getData(fileName, startDay - numTicks, startDay);
+		return HistoryDataProvider.getData("data/pool/" + stockCode, startDay - numTicks, startDay);
 	}
 
 }
