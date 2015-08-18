@@ -7,9 +7,14 @@ import com.ricequant.strategy.support.mock.StrategyRunner;
 
 public class RSIStrategySim {
 
+	private String[] stockCode = new String[] { "000528.XSHE" };
+
 	@Test
 	public void testRun() {
-		StrategyRunner runner = new StrategyRunner(new RSIStrategy(), 50, 226);
+		RSIStrategy strategy = new RSIStrategy();
+		strategy.setStockCode(stockCode);
+
+		StrategyRunner runner = new StrategyRunner(strategy, 50, 226);
 		runner.runStrategy();
 
 		runner.portfolioStatus();

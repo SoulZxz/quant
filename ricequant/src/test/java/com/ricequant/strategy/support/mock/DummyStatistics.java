@@ -23,7 +23,7 @@ public class DummyStatistics implements IHStatistics {
 
 	@Override
 	public IHInstrument getInstrument() {
-		throw new IllegalArgumentException("unimplemented");
+		return new DummyInstrument(stockCode);
 	}
 
 	@Override

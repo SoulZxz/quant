@@ -6,12 +6,10 @@
 	<version>0.0.1-SNAPSHOT</version>
 
 	<repositories>
-	<!-- 
 		<repository>
 			<id>repo-mirror</id>
 			<url>http://maven.net.cn/content/groups/public/</url>
 		</repository>
-		 -->
 		<repository>
 			<id>central</id>
 			<name>Maven Repository Switchboard</name>
@@ -39,12 +37,10 @@
 	</repositories>
 
 	<pluginRepositories>
-	<!-- 
 		<pluginRepository>
 			<id>plugin-repo-mirror</id>
 			<url>http://maven.net.cn/content/groups/public/</url>
 		</pluginRepository>
-		 -->
 		<pluginRepository>
 			<id>maven2-repository.dev.java.net</id>
 			<name>Java.net Repository for Maven</name>

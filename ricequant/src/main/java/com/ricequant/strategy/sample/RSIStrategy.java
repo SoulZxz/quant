@@ -35,7 +35,7 @@ public class RSIStrategy implements IHStrategy {
 	private double unclosedPositionInitValue;
 
 	/** other **/
-	private String stockCode = "000528.XSHE";
+	private String[] stockCode = new String[] { "000528.XSHE" };
 
 	private boolean allowShortSell = false;
 
@@ -52,7 +52,7 @@ public class RSIStrategy implements IHStrategy {
 
 		initializers.events().statistics((stats, info, trans) -> {
 			stats.each((stat) -> {
-				RSIStrategy.this.eaWork(stats.get(stockCode), info, trans);
+				RSIStrategy.this.eaWork(stat, info, trans);
 			});
 		});
 	}
@@ -62,7 +62,7 @@ public class RSIStrategy implements IHStrategy {
 		if (rsiSignal != 0) {
 			int direction = rsiSignal > 0 ? 1 : -1;
 			theInformer.info("rsi trade " + direction);
-			this.entry(trans, info, stat, stockCode, direction);
+			this.entry(trans, info, stat, stat.getInstrument().getSymbol(), direction);
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());
@@ -159,6 +159,10 @@ public class RSIStrategy implements IHStrategy {
 			currentUnclosedProfitHeld = 0;
 			highestUnclosedProfitHeld = 0;
 		}
+	}
+
+	public void setStockCode(String[] stockCode) {
+		this.stockCode = stockCode;
 	}
 
 }

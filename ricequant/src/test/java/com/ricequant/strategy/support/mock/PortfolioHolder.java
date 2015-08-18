@@ -58,7 +58,7 @@ public class PortfolioHolder {
 				+ " shortSellAvailableQuota " + shortSellAvailableQuota);
 
 		// 第二天open
-		double tradePrice = this.getTradePrice(day, stockCode);
+		double tradePrice = this.getTradePrice(tradeDirection, day, stockCode);
 		double currentPositionValue = nonClosed * tradePrice;
 		double currentPortfolioValue = currentPositionValue + currentCash;
 		double targetPositionValue = currentPortfolioValue * percent / 100;
@@ -66,6 +66,7 @@ public class PortfolioHolder {
 		double positionValueGap = targetPositionValue - Math.abs(currentPositionValue);
 		double positionChange = ((int) (positionValueGap / tradePrice)) / 100 * 100;
 
+		log.debug("tradeDirection " + tradeDirection + " at " + tradePrice);
 		log.debug("tradePercent positionValueGap " + positionValueGap + " positionChange "
 				+ positionChange);
 
@@ -96,8 +97,10 @@ public class PortfolioHolder {
 				+ " shortSellAvailableQuota " + shortSellAvailableQuota);
 
 		// 第二天open
-		double tradePrice = this.getTradePrice(day, stockCode);
+		double tradePrice = this.getTradePrice(tradeDirection, day, stockCode);
 		double positionChange = 0;
+
+		log.debug("tradeDirection " + tradeDirection + " at " + tradePrice);
 
 		if (tradeDirection > 0) {
 			double maxPositionChange = ((int) (currentCash / tradePrice)) / 100 * 100;
@@ -129,22 +132,27 @@ public class PortfolioHolder {
 		double positionValue = 0;
 
 		for (DummyPosition position : positions.values()) {
-			double tradePrice = this.getTradePrice(day, position.stockCode);
+			double tradePrice = this.getTradePrice(1, day, position.stockCode);
 			positionValue += tradePrice * position.getNonClosedTradeQuantity();
 		}
 		return positionValue + currentCash;
 	}
 
-	private double getTradePrice(int day, String stockCode) {
+	private double getTradePrice(int tradeDirection, int day, String stockCode) {
 		int maxDay = HistoryDataProvider.getData("data/pool/" + stockCode).getClosingPrice().length;
 		if (day >= maxDay) {
 			IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
 					maxDay - 1, maxDay);
 			return history.getClosingPrice()[0];
 		} else {
+			// buy按照当日closing, sell按照第二天open
 			IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
-					day, day + 1);
-			return history.getOpeningPrice()[0];
+					day - 1, day + 1);
+			if (tradeDirection > 0) {
+				return history.getClosingPrice()[0];
+			} else {
+				return history.getOpeningPrice()[1];
+			}
 		}
 	}
 
