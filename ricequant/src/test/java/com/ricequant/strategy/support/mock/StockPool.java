@@ -5,13 +5,13 @@ import java.util.List;
 
 public class StockPool {
 
-	private static List<String> stockCodes = new ArrayList<String>();
+	private List<String> stockCodes = new ArrayList<String>();
 
-	public static void addStockCode(String stockCode) {
+	public void addStockCode(String stockCode) {
 		stockCodes.add(stockCode);
 	}
 
-	public static List<String> getStockCodes() {
+	public List<String> getStockCodes() {
 		return stockCodes;
 	}
 

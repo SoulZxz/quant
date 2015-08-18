@@ -11,11 +11,12 @@ public class DummyStatisticsGroup implements IHStatisticsGroup {
 
 	private int startDay;
 
-	private StatisticsFunction statFunc;
+	private RunnerContext runnerContext;
 
-	public DummyStatisticsGroup(int startDay) {
+	public DummyStatisticsGroup(int startDay, RunnerContext runnerContext) {
 		super();
 		this.startDay = startDay;
+		this.runnerContext = runnerContext;
 	}
 
 	@Override
@@ -36,8 +37,7 @@ public class DummyStatisticsGroup implements IHStatisticsGroup {
 
 	@Override
 	public void each(StatisticsFunction stat) {
-		this.statFunc = stat;
-		for (String stockCode : StockPool.getStockCodes()) {
+		for (String stockCode : runnerContext.getStockPool().getStockCodes()) {
 			stat.calculate(new DummyStatistics(startDay, stockCode));
 		}
 	}

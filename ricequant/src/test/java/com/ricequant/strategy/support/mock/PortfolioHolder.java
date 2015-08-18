@@ -1,19 +1,30 @@
 package com.ricequant.strategy.support.mock;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.ricequant.strategy.def.IHStatisticsHistory;
 import com.ricequant.strategy.support.HistoryDataProvider;
 
 public class PortfolioHolder {
 
-	private static Map<String, DummyPosition> positions = new HashMap<String, DummyPosition>();
+	private Logger log = LogManager.getLogger(PortfolioHolder.class);
 
-	private static double currentCash = 100000;
+	private List<TransactionDetail> transactionDetails = new ArrayList<TransactionDetail>();
 
-	public static DummyPosition position(String stockCode) {
+	private Map<String, DummyPosition> positions = new HashMap<String, DummyPosition>();
+
+	private double currentCash = 100000;
+
+	private double shortSellAvailableQuota = currentCash;
+
+	public DummyPosition position(String stockCode) {
 		DummyPosition currentPosition = positions.get(stockCode);
 		if (currentPosition == null) {
 			currentPosition = new DummyPosition();
@@ -23,7 +34,7 @@ public class PortfolioHolder {
 		return currentPosition;
 	}
 
-	public static double profitAndLoss(int day) {
+	public double profitAndLoss(int day) {
 		double profitAndLoss = 0;
 		for (Entry<String, DummyPosition> position : positions.entrySet()) {
 			IHStatisticsHistory history = HistoryDataProvider.getData(position.getKey(), day - 1,
@@ -36,84 +47,127 @@ public class PortfolioHolder {
 		return profitAndLoss;
 	}
 
-	public static void tradePercent(int day, String stockCode, int tradeDirection, double percent) {
-		System.out.println("tradePercent day " + day + " stockCode " + stockCode
-				+ " tradeDirection " + tradeDirection + " percent " + percent);
-		IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
-				day + 1, day + 2);
+	public void tradePercent(int day, String stockCode, int tradeDirection, double percent) {
+		log.debug("tradePercent day " + day + " stockCode " + stockCode + " tradeDirection "
+				+ tradeDirection + " percent " + percent);
 
-		DummyPosition currentPosition = positions.get(stockCode);
-		if (currentPosition == null) {
-			currentPosition = new DummyPosition();
-			currentPosition.stockCode = stockCode;
-			positions.put(stockCode, currentPosition);
-		}
+		DummyPosition currentPosition = this.position(stockCode);
+		double nonClosed = currentPosition.getNonClosedTradeQuantity();
 
-		System.out.println("tradePercent currentPosition " + currentPosition + " currentCash "
-				+ currentCash);
+		log.debug("tradePercent currentPosition " + currentPosition + " currentCash " + currentCash
+				+ " shortSellAvailableQuota " + shortSellAvailableQuota);
 
 		// 第二天open
-		double tradePrice = history.getOpeningPrice()[0];
-		double currentPositionValue = Math.abs(currentPosition.getNonClosedTradeQuantity())
-				* tradePrice;
+		double tradePrice = this.getTradePrice(day, stockCode);
+		double currentPositionValue = nonClosed * tradePrice;
 		double currentPortfolioValue = currentPositionValue + currentCash;
 		double targetPositionValue = currentPortfolioValue * percent / 100;
 
-		double positionValueGap = targetPositionValue - currentPositionValue;
+		double positionValueGap = targetPositionValue - Math.abs(currentPositionValue);
 		double positionChange = ((int) (positionValueGap / tradePrice)) / 100 * 100;
 
-		System.out.println("tradePercent positionValueGap " + positionValueGap + " positionChange "
+		log.debug("tradePercent positionValueGap " + positionValueGap + " positionChange "
 				+ positionChange);
 
-		currentCash = currentCash - tradePrice * positionChange;
-		double newPosition = currentPosition.getNonClosedTradeQuantity() + tradeDirection
-				* positionChange;
+		currentCash = currentCash - tradeDirection * tradePrice * positionChange;
+		if ((nonClosed == 0 && tradeDirection < 0) || (nonClosed < 0 && tradeDirection > 0)) {
+			shortSellAvailableQuota = shortSellAvailableQuota + tradeDirection * tradePrice
+					* positionChange;
+		}
+		double newPosition = nonClosed + tradeDirection * positionChange;
 		currentPosition.setNonClosedTradeQuantity(newPosition);
-		System.out.println("tradePercent after trade currentPosition " + currentPosition
-				+ " currentCash " + currentCash);
+		log.debug("tradePercent after trade currentPosition " + currentPosition + " currentCash "
+				+ currentCash + " shortSellAvailableQuota " + shortSellAvailableQuota);
+
+		logTransactionDetail(day, tradeDirection);
 	}
 
-	public static void tradeShares(int day, String stockCode, int tradeDirection, double shares) {
-		System.out.println("tradeShares day " + day + " stockCode " + stockCode
-				+ " tradeDirection " + tradeDirection + " shares " + shares);
+	public void tradeShares(int day, String stockCode, int tradeDirection, double shares) {
+		log.debug("tradeShares day " + day + " stockCode " + stockCode + " tradeDirection "
+				+ tradeDirection + " shares " + shares);
 		if (shares < 0) {
 			throw new IllegalArgumentException("trade shares less than 0");
 		}
 
-		IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
-				day + 1, day + 2);
+		DummyPosition currentPosition = this.position(stockCode);
+		double nonClosed = currentPosition.getNonClosedTradeQuantity();
 
-		DummyPosition currentPosition = positions.get(stockCode);
-		if (currentPosition == null) {
-			currentPosition = new DummyPosition();
-			currentPosition.stockCode = stockCode;
-			positions.put(stockCode, currentPosition);
-		}
-
-		System.out.println("tradeShares currentPosition " + currentPosition + " currentCash "
-				+ currentCash);
+		log.debug("tradeShares currentPosition " + currentPosition + " currentCash " + currentCash
+				+ " shortSellAvailableQuota " + shortSellAvailableQuota);
 
 		// 第二天open
-		double tradePrice = history.getOpeningPrice()[0];
+		double tradePrice = this.getTradePrice(day, stockCode);
 		double positionChange = 0;
 
 		if (tradeDirection > 0) {
 			double maxPositionChange = ((int) (currentCash / tradePrice)) / 100 * 100;
 			positionChange = Math.min(shares, maxPositionChange);
 		} else {
-			positionChange = Math.min(shares, currentPosition.getNonClosedTradeQuantity());
+			positionChange = Math.min(shares, nonClosed);
 		}
 
 		currentCash = currentCash - tradeDirection * tradePrice * positionChange;
-		double newPosition = currentPosition.getNonClosedTradeQuantity() + tradeDirection
-				* positionChange;
+		if ((nonClosed == 0 && tradeDirection < 0) || (nonClosed < 0 && tradeDirection > 0)) {
+			shortSellAvailableQuota = shortSellAvailableQuota + tradeDirection * tradePrice
+					* positionChange;
+		}
+		double newPosition = nonClosed + tradeDirection * positionChange;
 		currentPosition.setNonClosedTradeQuantity(newPosition);
-		System.out.println("tradeShares after trade currentPosition " + currentPosition
-				+ " currentCash " + currentCash);
+		log.debug("tradeShares after trade currentPosition " + currentPosition + " currentCash "
+				+ currentCash + " shortSellAvailableQuota " + shortSellAvailableQuota);
+
+		logTransactionDetail(day, tradeDirection);
 	}
 
-	public static void status() {
-		System.out.println("current cash " + currentCash);
-		System.out.println("current positions " + positions);
+	public void status(int day) {
+		log.info("current cash " + currentCash + "current positions " + positions
+				+ " currentPortfolioValue " + this.currentPortfolioValue(day));
+		log.info("transactionDetails " + transactionDetails);
+	}
+
+	public double currentPortfolioValue(int day) {
+		double positionValue = 0;
+
+		for (DummyPosition position : positions.values()) {
+			double tradePrice = this.getTradePrice(day, position.stockCode);
+			positionValue += tradePrice * position.getNonClosedTradeQuantity();
+		}
+		return positionValue + currentCash;
+	}
+
+	private double getTradePrice(int day, String stockCode) {
+		int maxDay = HistoryDataProvider.getData("data/pool/" + stockCode).getClosingPrice().length;
+		if (day >= maxDay) {
+			IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
+					maxDay - 1, maxDay);
+			return history.getClosingPrice()[0];
+		} else {
+			IHStatisticsHistory history = HistoryDataProvider.getData("data/pool/" + stockCode,
+					day, day + 1);
+			return history.getOpeningPrice()[0];
+		}
+	}
+
+	private TransactionDetail getLastTransactionDetail() {
+		if (transactionDetails.isEmpty()) {
+			return null;
+		} else {
+			return transactionDetails.get(transactionDetails.size() - 1);
+		}
+	}
+
+	private void logTransactionDetail(int day, int tradeDirection) {
+		TransactionDetail detail = getLastTransactionDetail();
+		if (detail == null) {
+			detail = new TransactionDetail();
+			detail.setEntryDay(day);
+			detail.setEntryValue(currentPortfolioValue(day));
+			detail.setTradeType(tradeDirection > 0 ? "Long" : "Short");
+			transactionDetails.add(detail);
+		} else {
+			detail.setExitDay(day);
+			detail.setExitValue(currentPortfolioValue(day));
+			detail.setProfit(detail.getExitValue() - detail.getEntryValue());
+		}
 	}
 }

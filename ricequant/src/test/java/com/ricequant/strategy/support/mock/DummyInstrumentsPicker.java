@@ -7,10 +7,17 @@ import com.ricequant.strategy.def.IHInstrumentsPicker;
 
 public class DummyInstrumentsPicker implements IHInstrumentsPicker {
 
+	private RunnerContext runnerContext;
+
+	public DummyInstrumentsPicker(RunnerContext runnerContext) {
+		super();
+		this.runnerContext = runnerContext;
+	}
+
 	@Override
 	public IHInstrumentsPicker add(String... idOrSymbol) {
 		for (String id : idOrSymbol) {
-			StockPool.addStockCode(id);
+			runnerContext.getStockPool().addStockCode(id);
 		}
 		return this;
 	}

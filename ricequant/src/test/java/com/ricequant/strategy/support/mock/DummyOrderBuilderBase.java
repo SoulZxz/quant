@@ -9,6 +9,8 @@ import com.ricequant.strategy.def.IHOrderBuilderBase;
 
 public class DummyOrderBuilderBase implements IHOrderBuilderBase {
 
+	private RunnerContext runnerContext;
+
 	private int day;
 
 	private String stockCode;
@@ -19,9 +21,10 @@ public class DummyOrderBuilderBase implements IHOrderBuilderBase {
 
 	private int tradeDirection;
 
-	public DummyOrderBuilderBase(int day, String stockCode, int tradeDirection, double percent,
-			double shares) {
+	public DummyOrderBuilderBase(RunnerContext runnerContext, int day, String stockCode,
+			int tradeDirection, double percent, double shares) {
 		super();
+		this.runnerContext = runnerContext;
 		this.day = day;
 		this.stockCode = stockCode;
 		this.percent = percent;
@@ -32,9 +35,10 @@ public class DummyOrderBuilderBase implements IHOrderBuilderBase {
 	@Override
 	public IHOrder commit() {
 		if (shares != 0) {
-			PortfolioHolder.tradeShares(day, stockCode, tradeDirection, shares);
+			runnerContext.getPortfolioHolder().tradeShares(day, stockCode, tradeDirection, shares);
 		} else {
-			PortfolioHolder.tradePercent(day, stockCode, tradeDirection, percent);
+			runnerContext.getPortfolioHolder()
+					.tradePercent(day, stockCode, tradeDirection, percent);
 		}
 		return null;
 	}

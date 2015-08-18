@@ -5,6 +5,8 @@ import com.ricequant.strategy.def.IHOrderQuantityPicker;
 
 public class DummyOrderQuantityPicker implements IHOrderQuantityPicker {
 
+	private RunnerContext runnerContext;
+
 	private int day;
 
 	private String stockCode;
@@ -12,8 +14,10 @@ public class DummyOrderQuantityPicker implements IHOrderQuantityPicker {
 	// buy 1; sell -1
 	private int tradeDirection;
 
-	public DummyOrderQuantityPicker(int day, String stockCode, int tradeDirection) {
+	public DummyOrderQuantityPicker(RunnerContext runnerContext, int day, String stockCode,
+			int tradeDirection) {
 		super();
+		this.runnerContext = runnerContext;
 		this.day = day;
 		this.stockCode = stockCode;
 		this.tradeDirection = tradeDirection;
@@ -21,7 +25,8 @@ public class DummyOrderQuantityPicker implements IHOrderQuantityPicker {
 
 	@Override
 	public IHOrderBuilderBase shares(double numShares) {
-		return new DummyOrderBuilderBase(day, stockCode, tradeDirection, 0, numShares);
+		return new DummyOrderBuilderBase(runnerContext, day, stockCode, tradeDirection, 0,
+				numShares);
 	}
 
 	@Override
@@ -31,7 +36,7 @@ public class DummyOrderQuantityPicker implements IHOrderQuantityPicker {
 
 	@Override
 	public IHOrderBuilderBase percent(double percent) {
-		return new DummyOrderBuilderBase(day, stockCode, tradeDirection, percent, 0);
+		return new DummyOrderBuilderBase(runnerContext, day, stockCode, tradeDirection, percent, 0);
 	}
 
 }

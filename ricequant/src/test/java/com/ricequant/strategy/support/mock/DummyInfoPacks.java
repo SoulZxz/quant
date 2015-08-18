@@ -10,6 +10,13 @@ public class DummyInfoPacks implements IHInfoPacks {
 
 	private int day;
 
+	private RunnerContext runnerContext;
+
+	public DummyInfoPacks(RunnerContext runnerContext) {
+		super();
+		this.runnerContext = runnerContext;
+	}
+
 	@Override
 	public IHInstrument instrument(String idOrSymbol) {
 		throw new IllegalArgumentException("unimplemented");
@@ -17,7 +24,7 @@ public class DummyInfoPacks implements IHInfoPacks {
 
 	@Override
 	public IHPortfolio portfolio() {
-		double profitAndLoss = PortfolioHolder.profitAndLoss(day);
+		double profitAndLoss = runnerContext.getPortfolioHolder().profitAndLoss(day);
 		return new DummyPortfolio(profitAndLoss);
 	}
 
@@ -28,7 +35,7 @@ public class DummyInfoPacks implements IHInfoPacks {
 
 	@Override
 	public IHPosition position(String idOrSymbol) {
-		return PortfolioHolder.position(idOrSymbol);
+		return runnerContext.getPortfolioHolder().position(idOrSymbol);
 	}
 
 	@Override

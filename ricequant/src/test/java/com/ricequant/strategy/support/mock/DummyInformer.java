@@ -1,8 +1,13 @@
 package com.ricequant.strategy.support.mock;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import com.ricequant.strategy.def.IHInformer;
 
 public class DummyInformer implements IHInformer {
+
+	private Logger log = LogManager.getLogger(DummyInformer.class);
 
 	@Override
 	public void debug(Object o) {
@@ -42,12 +47,12 @@ public class DummyInformer implements IHInformer {
 
 	@Override
 	public void info(Object o) {
-		System.out.println(o);
+		log.info(o);
 	}
 
 	@Override
 	public void info(String s) {
-		System.out.println(s);
+		log.info(s);
 	}
 
 	@Override

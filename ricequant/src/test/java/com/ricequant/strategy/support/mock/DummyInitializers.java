@@ -8,6 +8,8 @@ import com.ricequant.strategy.def.mock.PickerFunction;
 
 public class DummyInitializers implements IHInitializers {
 
+	private RunnerContext runnerContext;
+
 	private ParamDouble slippage = new DummyParamDouble();
 
 	private ParamDouble commission = new DummyParamDouble();
@@ -38,7 +40,11 @@ public class DummyInitializers implements IHInitializers {
 
 	@Override
 	public void instruments(PickerFunction pickerFactory) {
-		pickerFactory.pick(new DummyInstrumentsPicker());
+		pickerFactory.pick(new DummyInstrumentsPicker(runnerContext));
+	}
+
+	public void setRunnerContext(RunnerContext runnerContext) {
+		this.runnerContext = runnerContext;
 	}
 
 }

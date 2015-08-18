@@ -12,24 +12,36 @@ public class StrategyRunner {
 
 	private DummyInitializers initializers = new DummyInitializers();
 
+	private RunnerContext runnerContext = new RunnerContext();
+
+	private int currentDay;
+
 	public StrategyRunner(IHStrategy strategy, int fromDay, int toDay) {
 		super();
 		this.strategy = strategy;
 		this.fromDay = fromDay;
 		this.toDay = toDay;
+		initializers.setRunnerContext(runnerContext);
 		strategy.init(new DummyInformer(), initializers);
 	}
 
 	public void runStrategy() {
-		DummyInfoPacks info = new DummyInfoPacks();
-		DummyTransactionFactory trans = new DummyTransactionFactory();
+		DummyInfoPacks info = new DummyInfoPacks(runnerContext);
+		DummyTransactionFactory trans = new DummyTransactionFactory(runnerContext);
 
-		for (int day = fromDay; day < toDay; day++) {
-			info.setDay(day);
-			trans.setDay(day);
-			DummyStatisticsGroup stats = new DummyStatisticsGroup(day);
+		for (currentDay = fromDay; currentDay < toDay; currentDay++) {
+			info.setDay(currentDay);
+			trans.setDay(currentDay);
+			DummyStatisticsGroup stats = new DummyStatisticsGroup(currentDay, runnerContext);
 			initializers.events().getUpdateHandler().handle(stats, info, trans);
 		}
 	}
 
+	public void portfolioStatus() {
+		runnerContext.getPortfolioHolder().status(currentDay);
+	}
+
+	private String strategyName() {
+		return strategy.getClass().getSimpleName();
+	}
 }
