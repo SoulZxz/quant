@@ -9,12 +9,16 @@ public class RSIStrategySim {
 
 	private String[] stockCode = new String[] { "000528.XSHE" };
 
+	private int startDay = 50;
+
+	private int endDay = 226;
+
 	@Test
 	public void testRun() {
 		RSIStrategy strategy = new RSIStrategy();
 		strategy.setStockCode(stockCode);
 
-		StrategyRunner runner = new StrategyRunner(strategy, 50, 226);
+		StrategyRunner runner = new StrategyRunner(strategy, startDay, endDay);
 		runner.runStrategy();
 
 		runner.portfolioStatus();
