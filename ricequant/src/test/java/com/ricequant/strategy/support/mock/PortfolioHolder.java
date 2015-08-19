@@ -138,6 +138,15 @@ public class PortfolioHolder {
 		return positionValue + currentCash;
 	}
 
+	public void closeLastTransactionDetail(int day) {
+		TransactionDetail lastDetail = this.getLastTransactionDetail();
+		if (lastDetail != null && lastDetail.getExitDay() == null) {
+			lastDetail.setExitDay(day);
+			lastDetail.setExitValue(this.currentPortfolioValue(day));
+			lastDetail.setProfit(lastDetail.getExitValue() - lastDetail.getEntryValue());
+		}
+	}
+
 	private double getTradePrice(int tradeDirection, int day, String stockCode) {
 		int maxDay = HistoryDataProvider.getData("data/pool/" + stockCode).getClosingPrice().length;
 		if (day >= maxDay) {

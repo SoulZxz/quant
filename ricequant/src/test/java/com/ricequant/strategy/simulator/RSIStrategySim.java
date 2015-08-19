@@ -22,6 +22,7 @@ public class RSIStrategySim {
 		runner.runStrategy();
 
 		runner.portfolioStatus();
+		runner.concludePortfolio();
 	}
 
 }

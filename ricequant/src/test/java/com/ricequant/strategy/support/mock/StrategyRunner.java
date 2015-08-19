@@ -41,6 +41,10 @@ public class StrategyRunner {
 		runnerContext.getPortfolioHolder().status(currentDay);
 	}
 
+	public void concludePortfolio() {
+		runnerContext.getPortfolioHolder().closeLastTransactionDetail(currentDay);
+	}
+
 	private String strategyName() {
 		return strategy.getClass().getSimpleName();
 	}
