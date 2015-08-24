@@ -147,6 +147,10 @@ public class PortfolioHolder {
 		}
 	}
 
+	public List<TransactionDetail> getTransactionDetails() {
+		return transactionDetails;
+	}
+
 	private double getTradePrice(int tradeDirection, int day, String stockCode) {
 		int maxDay = HistoryDataProvider.getData("data/pool/" + stockCode).getClosingPrice().length;
 		if (day >= maxDay) {

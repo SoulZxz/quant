@@ -1,5 +1,7 @@
 package com.ricequant.strategy.support.mock;
 
+import java.util.List;
+
 import com.ricequant.strategy.def.IHStrategy;
 
 public class StrategyRunner {
@@ -43,6 +45,10 @@ public class StrategyRunner {
 
 	public void concludePortfolio() {
 		runnerContext.getPortfolioHolder().closeLastTransactionDetail(currentDay);
+	}
+
+	public List<TransactionDetail> exportTxDetails() {
+		return runnerContext.getPortfolioHolder().getTransactionDetails();
 	}
 
 	private String strategyName() {

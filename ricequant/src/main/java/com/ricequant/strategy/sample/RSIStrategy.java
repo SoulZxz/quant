@@ -1,5 +1,8 @@
 package com.ricequant.strategy.sample;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.ricequant.strategy.def.HPeriod;
 import com.ricequant.strategy.def.IHInfoPacks;
 import com.ricequant.strategy.def.IHInformer;
@@ -35,16 +38,21 @@ public class RSIStrategy implements IHStrategy {
 	private double unclosedPositionInitValue;
 
 	/** other **/
-	private String[] stockCode = new String[] { "000528.XSHE" };
+	private List<String> stockCode = new ArrayList<String>();
 
 	private boolean allowShortSell = false;
+
+	public RSIStrategy() {
+		super();
+		stockCode.add("000528.XSHE");
+	}
 
 	@Override
 	public void init(IHInformer informer, IHInitializers initializers) {
 		theInformer = informer;
 
 		initializers.instruments((universe) -> {
-			return universe.add(stockCode);
+			return universe.add(stockCode.toArray(new String[stockCode.size()]));
 		});
 
 		// 允许卖空
@@ -161,8 +169,15 @@ public class RSIStrategy implements IHStrategy {
 		}
 	}
 
-	public void setStockCode(String[] stockCode) {
+	public void setStockCode(List<String> stockCode) {
 		this.stockCode = stockCode;
+	}
+
+	@Override
+	public String toString() {
+		return "RSIStrategy [lowRSI=" + lowRSI + ", highRSI=" + highRSI + ", dataSetSize="
+				+ dataSetSize + ", rsiPeriod=" + rsiPeriod + ", stockCode=" + stockCode
+				+ ", allowShortSell=" + allowShortSell + "]";
 	}
 
 }
