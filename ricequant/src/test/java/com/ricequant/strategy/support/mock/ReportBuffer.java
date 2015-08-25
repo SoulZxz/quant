@@ -5,14 +5,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
-import com.ricequant.strategy.def.IHStrategy;
-
 public class ReportBuffer {
 
-	private IHStrategy strategy;
+	private String strategyName;
+
+	private Map<String, Object> strategyParams;
 
 	private int startDay;
 
@@ -20,20 +21,50 @@ public class ReportBuffer {
 
 	private Map<String, List<TransactionDetail>> strategyInstTxMap = new HashMap<String, List<TransactionDetail>>();
 
-	public IHStrategy getStrategy() {
-		return strategy;
+	private Map<String, ReportFragment> frags;
+
+	public String getStrategyName() {
+		return strategyName;
 	}
 
-	public void setStrategy(IHStrategy strategy) {
-		this.strategy = strategy;
+	public void setStrategyName(String strategyName) {
+		this.strategyName = strategyName;
+	}
+
+	public Map<String, Object> getStrategyParams() {
+		return strategyParams;
+	}
+
+	public void setStrategyParams(Map<String, Object> strategyParams) {
+		this.strategyParams = strategyParams;
 	}
 
 	public void addStrategyInstTx(String id, List<TransactionDetail> details) {
 		strategyInstTxMap.put(id, details);
 	}
 
+	public int getStartDay() {
+		return startDay;
+	}
+
+	public void setStartDay(int startDay) {
+		this.startDay = startDay;
+	}
+
+	public int getEndDay() {
+		return endDay;
+	}
+
+	public void setEndDay(int endDay) {
+		this.endDay = endDay;
+	}
+
+	public Map<String, List<TransactionDetail>> getStrategyInstTxMap() {
+		return strategyInstTxMap;
+	}
+
 	public Map<String, ReportFragment> createReportFragments() {
-		Map<String, ReportFragment> frags = new HashMap<String, ReportFragment>();
+		frags = new TreeMap<String, ReportFragment>();
 		List<TransactionDetail> total = new ArrayList<TransactionDetail>();
 
 		for (Entry<String, List<TransactionDetail>> strategyInstTx : strategyInstTxMap.entrySet()) {
@@ -46,6 +77,10 @@ public class ReportBuffer {
 		ReportFragment totalFrag = this.createReportFragment(total);
 		frags.put("total", totalFrag);
 
+		return frags;
+	}
+
+	public Map<String, ReportFragment> getFrags() {
 		return frags;
 	}
 
@@ -64,7 +99,8 @@ public class ReportBuffer {
 		for (TransactionDetail detail : details) {
 			if (i == 0) {
 				portfolioStartValue = detail.getEntryValue();
-			} else if (i == details.size() - 1) {
+			}
+			if (i == details.size() - 1) {
 				portfolioEndValue = detail.getExitValue();
 			}
 

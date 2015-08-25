@@ -6,6 +6,7 @@ import com.ricequant.strategy.def.IHInstrument;
 import com.ricequant.strategy.def.IHStatistics;
 import com.ricequant.strategy.def.IHStatisticsGroup;
 import com.ricequant.strategy.def.mock.StatisticsFunction;
+import com.ricequant.strategy.support.HistoryDataProvider;
 
 public class DummyStatisticsGroup implements IHStatisticsGroup {
 
@@ -38,7 +39,9 @@ public class DummyStatisticsGroup implements IHStatisticsGroup {
 	@Override
 	public void each(StatisticsFunction stat) {
 		for (String stockCode : runnerContext.getStockPool().getStockCodes()) {
-			stat.calculate(new DummyStatistics(startDay, stockCode));
+			if (startDay <= HistoryDataProvider.queryMaxDay("data/pool/" + stockCode)) {
+				stat.calculate(new DummyStatistics(startDay, stockCode));
+			}
 		}
 	}
 

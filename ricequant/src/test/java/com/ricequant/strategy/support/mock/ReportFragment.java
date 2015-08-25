@@ -194,4 +194,15 @@ public class ReportFragment {
 		this.totalProfit = totalProfit;
 	}
 
+	@Override
+	public String toString() {
+		return "ReportFragment [details=" + details + ", startDay=" + startDay + ", endDay="
+				+ endDay + ", days=" + days + ", trades=" + trades + ", wins=" + wins + ", loses="
+				+ loses + ", winningRate=" + winningRate + ", losingRate=" + losingRate
+				+ ", profitMean=" + profitMean + ", profitStd=" + profitStd + ", profitMedian="
+				+ profitMedian + ", lossMean=" + lossMean + ", lossStd=" + lossStd
+				+ ", lossMedian=" + lossMedian + ", grossMean=" + grossMean + ", grossStd="
+				+ grossStd + ", grossMedian=" + grossMedian + ", totalProfit=" + totalProfit + "]";
+	}
+
 }

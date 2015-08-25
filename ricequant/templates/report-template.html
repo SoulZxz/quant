@@ -1,17 +1,170 @@
 <html>
 <head>
 <title>${title}</title>
+<link rel="stylesheet" href="css/report.css">
 </head>
 <body>
-	<div id="summary">
-		<p>${strategyName}</p>
-		<table id="params">
+	<div class="summary">
+		<p>${report.strategyName}</p>
+		<table class="params">
 			<tr>
 				<th>name</th>
 				<th>value</th>
 			</tr>
-
+			<#assign strategyParams = report.strategyParams>
+			<#assign keys = strategyParams?keys>
+			<#list keys as key>
+			<tr>
+				<td>${key}</td>
+				<td>${strategyParams[key]}</td>
+			</tr>			
+			</#list>
 		</table>
 	</div>
+	
+	<#assign total = report.frags["total"]>
+	<div class="details">
+		<table class="txGross">
+			<tr>
+				<th>start</th>
+				<th>end</th>
+				<th>days</th>
+				<th>trades</th>
+				<th>totalProfit</th>
+				<th>grossMean</th>
+				<th>grossStd</th>
+				<th>grossMedian</th>
+			</tr>
+			<tr>
+				<td>${total.startDay}</td>
+				<td>${total.endDay}</td>
+				<td>${total.days}</td>
+				<td>${total.trades}</td>
+				<td>${total.totalProfit}</td>
+				<td>${total.grossMean}</td>
+				<td>${total.grossStd}</td>
+				<td>${total.grossMedian}</td>				
+			</tr>
+		</table>
+		<table class="txWin">
+			<tr>
+				<th>wins</th>
+				<th>winningRate</th>
+				<th>profitMean</th>
+				<th>profitStd</th>
+				<th>profitMedian</th>
+			</tr>
+			<tr>
+				<td>${total.wins}</td>
+				<td>${total.winningRate}</td>
+				<td>${total.profitMean}</td>
+				<td>${total.profitStd}</td>
+				<td>${total.profitMedian}</td>
+			</tr>
+		</table>
+		<table class="txLoss">
+			<tr>
+				<th>loses</th>
+				<th>losingRate</th>
+				<th>lossMean</th>
+				<th>lossStd</th>
+				<th>lossMedian</th>
+			</tr>
+			<tr>
+				<td>${total.loses}</td>
+				<td>${total.losingRate}</td>
+				<td>${total.lossMean}</td>
+				<td>${total.lossStd}</td>
+				<td>${total.lossMedian}</td>
+			</tr>
+		</table>			
+	</div>
+	
+	<p>performance details</p>
+	<#assign strategyInstTxMap = report.strategyInstTxMap>
+	<#assign keys = strategyInstTxMap?keys>
+	<#list keys as key>
+	<#assign txDetails = strategyInstTxMap[key]>
+	<#assign frag = report.frags[key]>
+	<div class="details">
+		<p>${key}</p>
+		<table class="txGross">
+			<tr>
+				<th>start</th>
+				<th>end</th>
+				<th>days</th>
+				<th>trades</th>
+				<th>totalProfit</th>
+				<th>grossMean</th>
+				<th>grossStd</th>
+				<th>grossMedian</th>
+			</tr>
+			<tr>
+				<td>${frag.startDay}</td>
+				<td>${frag.endDay}</td>
+				<td>${frag.days}</td>
+				<td>${frag.trades}</td>
+				<td>${frag.totalProfit}</td>
+				<td>${frag.grossMean}</td>
+				<td>${frag.grossStd}</td>
+				<td>${frag.grossMedian}</td>				
+			</tr>
+		</table>
+		<table class="txWin">
+			<tr>
+				<th>wins</th>
+				<th>winningRate</th>
+				<th>profitMean</th>
+				<th>profitStd</th>
+				<th>profitMedian</th>
+			</tr>
+			<tr>
+				<td>${frag.wins}</td>
+				<td>${frag.winningRate}</td>
+				<td>${frag.profitMean}</td>
+				<td>${frag.profitStd}</td>
+				<td>${frag.profitMedian}</td>
+			</tr>
+		</table>
+		<table class="txLoss">
+			<tr>
+				<th>loses</th>
+				<th>losingRate</th>
+				<th>lossMean</th>
+				<th>lossStd</th>
+				<th>lossMedian</th>
+			</tr>
+			<tr>
+				<td>${frag.loses}</td>
+				<td>${frag.losingRate}</td>
+				<td>${frag.lossMean}</td>
+				<td>${frag.lossStd}</td>
+				<td>${frag.lossMedian}</td>
+			</tr>
+		</table>
+		
+		<p>transaction details for ${key}</p>
+		<table class="txDetails">
+			<tr>
+				<th>tradeType</th>
+				<th>entryValue</th>
+				<th>exitValue</th>
+				<th>profit</th>
+				<th>entryDay</th>
+				<th>exitDay</th>
+			</tr>
+			<#list txDetails as txDetail>
+			<tr>
+				<td>${txDetail.tradeType}</td>
+				<td>${txDetail.entryValue}</td>
+				<td>${txDetail.exitValue}</td>
+				<td>${txDetail.profit}</td>
+				<td>${txDetail.entryDay}</td>
+				<td>${txDetail.exitDay}</td>
+			</tr>
+			</#list>
+		</table>		
+	</div>
+	</#list>
 </body>
 </html>

@@ -66,6 +66,12 @@ public class HistoryDataProvider {
 		return copy;
 	}
 
+	public static int queryMaxDay(String stockCode) {
+		getData(stockCode);
+		DummyHistoryData data = cache.get(stockCode);
+		return data == null ? 0 : data.getClosingPrice().length;
+	}
+
 	private static double[] copy(Double[] src) {
 		double[] result = new double[src.length];
 		for (int i = 0; i < src.length; i++) {
