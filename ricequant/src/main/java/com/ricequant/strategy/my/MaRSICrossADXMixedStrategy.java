@@ -1,6 +1,8 @@
 package com.ricequant.strategy.my;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.apache.commons.math3.analysis.interpolation.SplineInterpolator;
 import org.apache.commons.math3.analysis.polynomials.PolynomialSplineFunction;
@@ -90,18 +92,27 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 	private double lossTrigger = -0.10;
 
 	/** other **/
-	private String stockCode = "000528.XSHE";
+	private List<String> stockCode = new ArrayList<String>();
 
 	private boolean filterEnabled = true;
 
 	private boolean allowShortSell = false;
+
+	public MaRSICrossADXMixedStrategy() {
+		super();
+		stockCode.add("000528.XSHE");
+	}
+
+	public void setStockCode(List<String> stockCode) {
+		this.stockCode = stockCode;
+	}
 
 	@Override
 	public void init(IHInformer informer, IHInitializers initializers) {
 		theInformer = informer;
 
 		initializers.instruments((universe) -> {
-			return universe.add(stockCode);
+			return universe.add(stockCode.toArray(new String[stockCode.size()]));
 		});
 
 		// 允许卖空
@@ -109,12 +120,13 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 
 		initializers.events().statistics((stats, info, trans) -> {
 			stats.each((stat) -> {
-				MaRSICrossADXMixedStrategy.this.eaWork(stats.get(stockCode), info, trans);
+				MaRSICrossADXMixedStrategy.this.eaWork(stat, info, trans);
 			});
 		});
 	}
 
 	public void eaWork(IHStatistics stat, IHInfoPacks info, IHTransactionFactory trans) {
+		String theStockCode = stat.getInstrument().getSymbol();
 		IHStatisticsHistory history = stat.history(adxSmoothingPeriod, HPeriod.Day);
 		double[] adx = this.computeADX(history.getClosingPrice(), history.getHighPrice(),
 				history.getLowPrice(), adxPeriod);
@@ -191,9 +203,9 @@ public class MaRSICrossADXMixedStrategy implements IHStrategy {
 		int entryDecisionDirection = rsiDecisionDirection + maDecisionDirection;
 
 		if (Math.abs(entryDecisionDirection) >= Math.abs(exitDecisionDirection)) {
-			this.entry(trans, info, stat, stockCode, entryDecisionDirection);
+			this.entry(trans, info, stat, theStockCode, entryDecisionDirection);
 		} else {
-			this.exit(trans, info, stockCode);
+			this.exit(trans, info, theStockCode);
 		}
 
 		theInformer.plot("CLOSING", stat.getClosingPrice());

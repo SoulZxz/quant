@@ -6,18 +6,20 @@ import java.util.List;
 import org.testng.annotations.Test;
 
 import com.ricequant.strategy.def.IHStrategy;
-import com.ricequant.strategy.sample.RSIStrategy;
+import com.ricequant.strategy.my.MaRSICrossADXMixedStrategy;
 
-public class RSIStrategySim extends BaseStrategySim {
+public class MaRSICrossADXMixedStrategySim extends BaseStrategySim {
 
-	public RSIStrategySim() {
+	public MaRSICrossADXMixedStrategySim() {
+		startDay = 150;
 		excludes = new String[] { "core", "theInformer", "stockCode", "currentUnclosedProfitHeld",
-				"highestUnclosedProfitHeld", "unclosedPositionInitValue" };
+				"highestUnclosedProfitHeld", "unclosedPositionInitValue", "MA_TYPE_EMA",
+				"MA_TYPE_SMA", "MA_TYPE_WMA" };
 		includes = new String[] { "stockCode" };
 	}
 
 	protected IHStrategy createStrategy(String stockCode) {
-		RSIStrategy strategy = new RSIStrategy();
+		MaRSICrossADXMixedStrategy strategy = new MaRSICrossADXMixedStrategy();
 		List<String> stockCodeList = new ArrayList<String>();
 		stockCodeList.add(stockCode);
 		strategy.setStockCode(stockCodeList);

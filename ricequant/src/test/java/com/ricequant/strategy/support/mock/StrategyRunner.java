@@ -51,7 +51,8 @@ public class StrategyRunner {
 		return runnerContext.getPortfolioHolder().getTransactionDetails();
 	}
 
-	private String strategyName() {
-		return strategy.getClass().getSimpleName();
+	public IHStrategy getStrategy() {
+		return strategy;
 	}
+
 }

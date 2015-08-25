@@ -1,7 +1,6 @@
 package com.ricequant.strategy.support.mock;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,7 +18,7 @@ public class ReportBuffer {
 
 	private int endDay;
 
-	private Map<String, List<TransactionDetail>> strategyInstTxMap = new HashMap<String, List<TransactionDetail>>();
+	private Map<String, List<TransactionDetail>> strategyInstTxMap = new TreeMap<String, List<TransactionDetail>>();
 
 	private Map<String, ReportFragment> frags;
 
@@ -105,14 +104,15 @@ public class ReportBuffer {
 			}
 
 			double profit = detail.getProfit();
+			double entryValue = detail.getEntryValue();
 			if (profit >= 0) {
 				wins++;
-				profitStats.addValue(profit);
+				profitStats.addValue(profit / entryValue);
 			} else {
 				loses++;
-				lossStats.addValue(profit);
+				lossStats.addValue(profit / entryValue);
 			}
-			grossStats.addValue(profit);
+			grossStats.addValue(profit / entryValue);
 
 			i++;
 		}

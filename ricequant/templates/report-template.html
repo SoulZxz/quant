@@ -24,23 +24,27 @@
 	
 	<#assign total = report.frags["total"]>
 	<div class="details">
-		<table class="txGross">
+		<table class="txDay">
 			<tr>
 				<th>start</th>
 				<th>end</th>
 				<th>days</th>
-				<th>trades</th>
-				<th>totalProfit</th>
-				<th>grossMean</th>
-				<th>grossStd</th>
-				<th>grossMedian</th>
 			</tr>
 			<tr>
 				<td>${total.startDay}</td>
 				<td>${total.endDay}</td>
 				<td>${total.days}</td>
+			</tr>
+		</table>	
+		<table class="txGross">
+			<tr>
+				<th>trades</th>
+				<th>grossMean</th>
+				<th>grossStd</th>
+				<th>grossMedian</th>
+			</tr>
+			<tr>
 				<td>${total.trades}</td>
-				<td>${total.totalProfit}</td>
 				<td>${total.grossMean}</td>
 				<td>${total.grossStd}</td>
 				<td>${total.grossMedian}</td>				
@@ -88,11 +92,20 @@
 	<#assign frag = report.frags[key]>
 	<div class="details">
 		<p>${key}</p>
-		<table class="txGross">
+		<table class="txDay">
 			<tr>
 				<th>start</th>
 				<th>end</th>
 				<th>days</th>
+			</tr>
+			<tr>
+				<td>${frag.startDay}</td>
+				<td>${frag.endDay}</td>
+				<td>${frag.days}</td>
+			</tr>
+		</table>		
+		<table class="txGross">
+			<tr>
 				<th>trades</th>
 				<th>totalProfit</th>
 				<th>grossMean</th>
@@ -100,9 +113,6 @@
 				<th>grossMedian</th>
 			</tr>
 			<tr>
-				<td>${frag.startDay}</td>
-				<td>${frag.endDay}</td>
-				<td>${frag.days}</td>
 				<td>${frag.trades}</td>
 				<td>${frag.totalProfit}</td>
 				<td>${frag.grossMean}</td>

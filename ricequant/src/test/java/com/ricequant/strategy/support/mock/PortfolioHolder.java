@@ -37,8 +37,8 @@ public class PortfolioHolder {
 	public double profitAndLoss(int day) {
 		double profitAndLoss = 0;
 		for (Entry<String, DummyPosition> position : positions.entrySet()) {
-			IHStatisticsHistory history = HistoryDataProvider.getData(position.getKey(), day - 1,
-					day + 1);
+			IHStatisticsHistory history = HistoryDataProvider.getData(
+					"data/pool/" + position.getKey(), day - 1, day + 1);
 			double[] closings = history.getClosingPrice();
 			double deltaValue = (closings[1] - closings[0])
 					* position.getValue().getNonClosedTradeQuantity();
@@ -179,16 +179,20 @@ public class PortfolioHolder {
 
 	private void logTransactionDetail(int day, int tradeDirection) {
 		TransactionDetail detail = getLastTransactionDetail();
-		if (detail == null) {
-			detail = new TransactionDetail();
-			detail.setEntryDay(day);
-			detail.setEntryValue(currentPortfolioValue(day));
-			detail.setTradeType(tradeDirection > 0 ? "Long" : "Short");
-			transactionDetails.add(detail);
+		if (detail == null || detail.getExitDay() != null) {
+			this.createNewTransactionDetail(day, tradeDirection);
 		} else {
 			detail.setExitDay(day);
 			detail.setExitValue(currentPortfolioValue(day));
 			detail.setProfit(detail.getExitValue() - detail.getEntryValue());
 		}
+	}
+
+	private void createNewTransactionDetail(int day, int tradeDirection) {
+		TransactionDetail detail = new TransactionDetail();
+		detail.setEntryDay(day);
+		detail.setEntryValue(currentPortfolioValue(day));
+		detail.setTradeType(tradeDirection > 0 ? "Long" : "Short");
+		transactionDetails.add(detail);
 	}
 }

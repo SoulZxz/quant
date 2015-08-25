@@ -32,6 +32,7 @@ public class HistoryDataProvider {
 			List<Double> low = new ArrayList<Double>();
 			List<Double> open = new ArrayList<Double>();
 			List<Double> close = new ArrayList<Double>();
+			List<Double> turnoverVolume = new ArrayList<Double>();
 
 			Scanner scanner = new Scanner(content);
 			while (scanner.hasNextLine()) {
@@ -42,6 +43,7 @@ public class HistoryDataProvider {
 					low.add(Double.valueOf(prices[1]).doubleValue());
 					open.add(Double.valueOf(prices[2]).doubleValue());
 					close.add(Double.valueOf(prices[3]).doubleValue());
+					turnoverVolume.add(Double.valueOf(prices[4]).doubleValue());
 				}
 			}
 			IOUtils.closeQuietly(scanner);
@@ -51,6 +53,7 @@ public class HistoryDataProvider {
 			data.setLowPrice(copy(low.toArray(new Double[low.size()])));
 			data.setOpeningPrice(copy(open.toArray(new Double[open.size()])));
 			data.setClosingPrice(copy(close.toArray(new Double[close.size()])));
+			data.setTurnoverVolume(copy(turnoverVolume.toArray(new Double[turnoverVolume.size()])));
 
 			cache.put(fileName, data);
 		}
@@ -63,6 +66,7 @@ public class HistoryDataProvider {
 		copy.setLowPrice(Arrays.copyOfRange(data.getLowPrice(), fromIndex, toIndex));
 		copy.setOpeningPrice(Arrays.copyOfRange(data.getOpeningPrice(), fromIndex, toIndex));
 		copy.setClosingPrice(Arrays.copyOfRange(data.getClosingPrice(), fromIndex, toIndex));
+		copy.setTurnoverVolume(Arrays.copyOfRange(data.getTurnoverVolume(), fromIndex, toIndex));
 		return copy;
 	}
 
